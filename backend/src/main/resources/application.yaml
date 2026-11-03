@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: streambridge
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  shutdown: graceful

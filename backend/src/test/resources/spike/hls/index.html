@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>StreamBridge HLS discovery spike</title>
+    <link rel="icon" href="data:,">
+    <script src="/hls.min.js"></script>
+</head>
+<body>
+    <h1>StreamBridge HLS discovery spike</h1>
+    <p>Local synthetic video. Click Play; Java will report the observed requests.</p>
+    <button id="play" type="button" disabled>Play test video</button>
+    <p id="status">Preparing the pre-click observation. Play will be enabled shortly.</p>
+    <video id="video" width="640" height="360" controls muted playsinline preload="none"></video>
+    <script>
+        const video = document.querySelector('#video');
+        const status = document.querySelector('#status');
+        const button = document.querySelector('#play');
+        window.spikeError = '';
+
+        function fail(message) {
+            window.spikeError = message;
+            status.textContent = message;
+            console.error(message);
+        }
+
+        button.addEventListener('click', () => {
+            button.disabled = true;
+            if (!window.Hls || !Hls.isSupported()) {
+                fail('The local HLS player or required MediaSource support is unavailable.');
+                return;
+            }
+            status.textContent = 'Loading the HLS playlist and segments...';
+            // The player and its media requests are created only after this click.
+            const hls = new Hls({ enableWorker: false });
+            hls.on(Hls.Events.ERROR, (_event, data) => {
+                if (data.fatal) fail(`HLS error: ${data.type} / ${data.details}`);
+            });
+            hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource('/media/stream.m3u8'));
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                video.play().catch(error => fail(`Playback failed: ${error.message}`));
+            });
+            video.addEventListener('error', () => fail(`Video error: ${video.error?.message}`));
+            video.addEventListener('playing', () => { status.textContent = 'Playing synthetic video.'; });
+            hls.attachMedia(video);
+        }, { once: true });
+    </script>
+</body>
+</html>

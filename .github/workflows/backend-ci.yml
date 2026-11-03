@@ -1,0 +1,122 @@
+name: Source and Windows pilot checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  portable:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      STREAMBRIDGE_UI_BROWSER_CHECK: '0'
+      STREAMBRIDGE_VISIBLE_BROWSER_CHECK: '0'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+      - name: Build and test Java (integration prerequisites intentionally absent)
+        run: ./backend/gradlew -p backend clean build
+      - name: Test UI
+        run: node --test backend/src/test/js/ui-connection.test.cjs
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    env:
+      STREAMBRIDGE_UI_BROWSER_CHECK: '1'
+      STREAMBRIDGE_VISIBLE_BROWSER_CHECK: '0'
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+      - name: Install pinned media tools for owned fixtures
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $archive = Join-Path $env:RUNNER_TEMP 'ffmpeg-9.0.2.zip'
+          Invoke-WebRequest 'https://github.com/GyanD/codexffmpeg/releases/download/9.0.2/ffmpeg-9.0.2-essentials_build.zip' -OutFile $archive
+          if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash -ne '60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba') { throw 'FFmpeg checksum mismatch' }
+          $tools = Join-Path $env:RUNNER_TEMP 'streambridge-media'
+          Expand-Archive -LiteralPath $archive -DestinationPath $tools
+          $bin = Join-Path $tools 'ffmpeg-9.0.2-essentials_build/bin'
+          if (!(Test-Path (Join-Path $bin 'ffmpeg.exe')) -or !(Test-Path (Join-Path $bin 'ffprobe.exe'))) { throw 'Incomplete media tools' }
+          "STREAMBRIDGE_FFMPEG_DIR=$bin" >> $env:GITHUB_ENV
+          "PLAYWRIGHT_BROWSERS_PATH=$(Join-Path $env:RUNNER_TEMP 'streambridge-chromium')" >> $env:GITHUB_ENV
+      - name: Install the Chromium revision required by Playwright
+        run: .\backend\gradlew.bat -p backend installSpikeChromium
+      - name: Full Windows build and tests
+        run: .\backend\gradlew.bat -p backend clean build
+      - name: Reject skipped integration tests
+        run: |
+          $reports = @(Get-ChildItem backend/build/test-results/test -Filter 'TEST-*.xml')
+          if ($reports.Count -eq 0) { throw 'Missing Java test results' }
+          $count = 0
+          foreach ($report in $reports) {
+            [xml]$xml = Get-Content -LiteralPath $report.FullName -Raw
+            $suite = $xml.testsuite
+            $count += [int]$suite.tests
+            if ([int]$suite.skipped -ne 0 -or [int]$suite.failures -ne 0 -or [int]$suite.errors -ne 0) { throw "Incomplete suite: $($suite.name)" }
+          }
+          if ($count -eq 0) { throw 'No Java tests executed' }
+          Write-Output "Passed $count Java tests with no skips"
+      - name: Test UI
+        run: node --test backend/src/test/js/ui-connection.test.cjs
+      - name: Build developer app-image (not a release)
+        run: .\backend\gradlew.bat -p backend packageWindowsApp
+      - name: Check packaged application without visible windows
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $image = (Get-Content backend/build/windows-app/latest-path.txt -Raw).Trim()
+          $report = Join-Path $env:RUNNER_TEMP 'streambridge-self-check.json'
+          $process = Start-Process -FilePath (Join-Path $image 'StreamBridge.exe') -ArgumentList ('--self-check="' + $report + '"') -WorkingDirectory $image -WindowStyle Hidden -PassThru
+          if (!$process.WaitForExit(60000)) { $process.Kill(); throw 'Package self-check timed out' }
+          $process.Refresh()
+          if ($process.ExitCode -ne 0) { throw "Package self-check exit $($process.ExitCode)" }
+          $result = Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
+          if (!$result.success) { throw 'Package self-check failed' }
+          Write-Output 'Packaged Java, tools, browser network policy and local UI checks passed'
+
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Scan checked-out source with pinned Gitleaks
+        shell: bash
+        run: |
+          set -euo pipefail
+          tool_dir="$RUNNER_TEMP/streambridge-gitleaks"
+          mkdir -p "$tool_dir"
+          curl --fail --location --silent --show-error 'https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz' -o "$tool_dir/gitleaks.tar.gz"
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $tool_dir/gitleaks.tar.gz" | sha256sum --check
+          tar -xzf "$tool_dir/gitleaks.tar.gz" -C "$tool_dir" gitleaks
+          "$tool_dir/gitleaks" dir . --redact --no-banner

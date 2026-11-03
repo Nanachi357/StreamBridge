@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>StreamBridge selection experiment</title>
+    <link rel="icon" href="data:,">
+    <script src="/hls.min.js"></script>
+</head>
+<body>
+<h1>Controlled HLS selection</h1>
+<p>Colors and tones identify synthetic content. UK/EN are test labels, not speech.</p>
+<div id="players"></div>
+<script>
+    const mode = '@@MODE@@';
+    window.spikeError = '';
+    function fail(message) { window.spikeError = message; console.error(message); }
+    function addPlayer(id) {
+        const section = document.createElement('section');
+        section.innerHTML = `<h2>Clip ${id.toUpperCase()}</h2>
+            <button id="start-${id}" disabled>Play clip ${id.toUpperCase()}</button>
+            <video id="video-${id}" width="320" height="180" controls muted playsinline></video>`;
+        document.querySelector('#players').append(section);
+        const button = section.querySelector('button');
+        const video = section.querySelector('video');
+        video.muted = true;
+        button.addEventListener('click', () => start(id, video), {once: true});
+        return video;
+    }
+    function start(id, video) {
+        document.querySelector(`#start-${id}`).disabled = true;
+        const hls = new Hls({enableWorker: false, startLevel: 0, capLevelToPlayerSize: false});
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+            if (data.fatal) fail(`${id}: ${data.type}/${data.details}`);
+        });
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(`/${id}/master`));
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            hls.currentLevel = 0; // Browser plays LOW/UK; downloader can select unseen HIGH/EN.
+            hls.audioTrack = 0;
+            video.play().catch(error => fail(error.message));
+        });
+        video.addEventListener('error', () => fail(video.error?.message || 'Video error'));
+        hls.attachMedia(video);
+    }
+    if (mode === 'multiple' || mode === 'iframe') {
+        const other = addPlayer('b');
+        start('b', other); // Deliberately appears first in network traffic.
+    }
+    if (mode === 'iframe') {
+        const frame = document.createElement('iframe');
+        frame.id = 'target-frame';
+        frame.name = 'target-frame';
+        frame.src = '@@FRAME_ORIGIN@@/frame';
+        frame.width = '700'; frame.height = '400';
+        document.querySelector('#players').append(frame);
+    } else {
+        addPlayer('a'); // Java enables this only after the negative/other-player observation.
+    }
+</script>
+</body>
+</html>
