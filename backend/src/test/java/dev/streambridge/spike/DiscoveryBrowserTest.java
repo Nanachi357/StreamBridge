@@ -170,8 +170,22 @@ class DiscoveryBrowserTest {
     }
     @Test void pageCrashGetsAnExplicitReason() throws Exception {
         try(var f=new Fixture()){
-            try{f.page.navigate("chrome://crash",new Page.NavigateOptions().setTimeout(2000));}catch(PlaywrightException expected){}
-            try{f.settle();}catch(PlaywrightException crashedPage){}
+            var crashObserved = new java.util.concurrent.atomic.AtomicBoolean();
+            f.page.onCrash(page -> crashObserved.set(true));
+            PlaywrightException navigationFailure = null;
+            try { f.page.navigate("chrome://crash", new Page.NavigateOptions().setTimeout(2000)); }
+            catch (PlaywrightException failure) { navigationFailure = failure; }
+            try {
+                // Navigation can fail well before the renderer's crash event arrives.
+                // Keep dispatching events through the surviving context, not the crashed page.
+                f.context.waitForCondition(crashObserved::get,
+                        new BrowserContext.WaitForConditionOptions().setTimeout(10_000));
+            } catch (PlaywrightException missingEvent) {
+                var failure = new AssertionError("No page crash event received; lifecycleReason=" + f.life.reason()
+                        + "; browserConnected=" + f.browser.isConnected(), missingEvent);
+                if (navigationFailure != null) failure.addSuppressed(navigationFailure);
+                throw failure;
+            }
             assertEquals("DISCOVERY_PAGE_CRASHED",f.life.reason());
         }
     }

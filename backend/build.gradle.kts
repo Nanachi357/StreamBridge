@@ -39,6 +39,8 @@ dependencies {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+    // CI console logs must retain assertion values and causes when no report is uploaded.
+    testLogging { exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL }
     systemProperty("streambridge.testClasspath", sourceSets["test"].runtimeClasspath.asPath)
     // Manual main() experiments are compiled but are not JUnit tests.
     include("**/*Test.class")
