@@ -4,7 +4,10 @@ Run StreamBridge.exe. Keep this entire folder together: app/ and runtime/ are re
 Java is included. Neither a system Java installation nor Gradle is needed to run it.
 This is an unsigned app-image, not an installer. Do not bypass Windows security warnings.
 
-Chromium (the version required by Playwright 1.63.0) and FFmpeg/FFprobe are external.
+Chrome for Testing (the version required by Playwright Java 1.64.0) and FFmpeg/FFprobe
+are external. This image does not redistribute those executables. Reinstall the
+Playwright browser after a dependency upgrade. The private Java runtime is built
+with Eclipse Temurin 21.0.13+9.
 Configure them in:
   %LOCALAPPDATA%\StreamBridge\pilot-launcher\tools.properties
 Copy tools.example.properties there and edit the paths. Use forward slashes.

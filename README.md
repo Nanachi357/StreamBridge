@@ -57,8 +57,9 @@ See [SECURITY.md](SECURITY.md) for protection boundaries and reporting guidance.
 
 ## Build and test from source
 
-Install a full **JDK 21** and set `JAVA_HOME` to it. Gradle 9.1.0 is supplied through
-the wrapper; the first build needs Internet access. Node.js 22 is used only to run
+Install a full **Eclipse Temurin JDK 21** and set `JAVA_HOME` to it. CI uses
+**21.0.13+9**; EXE packaging requires that exact build. Gradle 9.1.0 is supplied through
+the wrapper; the first build needs Internet access. Node.js **24.22.1** is used to run
 UI tests. Commands below use PowerShell from the repository root.
 
 ```powershell
@@ -77,12 +78,17 @@ is needed; dependency downloads and ordinary up-to-date task checks still work.
 
 ## Set up the Windows pilot
 
-1. Install the exact Chromium revision selected by the pinned Playwright dependency:
+1. Install the browser revision selected by Playwright Java **1.64.0**:
 
    ```powershell
    $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $env:LOCALAPPDATA 'StreamBridge-dev/playwright'
    .\backend\gradlew.bat -p backend installSpikeChromium
    ```
+
+   Playwright's `chromium` download is **Chrome for Testing**. It remains an
+   external development dependency; its binary redistribution terms must be
+   resolved before bundling it in an installer. After upgrading Playwright,
+   repeat this install command; the previous browser revision is insufficient.
 
 2. Obtain FFmpeg and FFprobe from a trusted distribution linked by the
    [FFmpeg project](https://ffmpeg.org/download.html). Review its license and verify
@@ -118,6 +124,12 @@ Keep the Chromium and FFmpeg variables from setup. Fixtures use owned local
 servers and generated media. No real video site is needed for these tests.
 
 ## Build an EXE application folder
+
+Use Eclipse Temurin **21.0.13+9** in `JAVA_HOME`; packaging rejects a different
+runtime build so an older local JDK cannot silently enter the package. Obtain it
+from the [official release](https://github.com/adoptium/temurin21-binaries/releases/tag/jdk-21.0.13%2B9).
+The Windows x64 HotSpot ZIP SHA-256 is
+`a4dbaa05fca4bd89d84584e58c459bd732efebb1722af80ab13c6516832004f9`.
 
 ```powershell
 .\backend\gradlew.bat -p backend packageWindowsApp

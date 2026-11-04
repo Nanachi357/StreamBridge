@@ -4,12 +4,17 @@ import java.util.jar.JarFile
 
 plugins {
     java
-    id("org.springframework.boot") version "4.1.1"
+    id("org.springframework.boot") version "4.1.2"
     id("io.spring.dependency-management") version "1.1.7"
 }
 
 group = "dev.streambridge"
 version = "0.1.0-SNAPSHOT"
+
+// Keep the Jackson 3.1 family aligned, including security fixes after Boot's BOM.
+extra["jackson-bom.version"] = "3.1.8"
+val playwrightVersion = "1.64.0"
+val packagedJavaVersion = "21.0.13+9"
 
 // The runtime is the pilot source set below, not an empty Spring Boot application.
 tasks.named("bootJar") { enabled = false }
@@ -18,6 +23,7 @@ tasks.named("jar") { enabled = false }
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
+        vendor = JvmVendorSpec.ADOPTIUM
     }
 }
 
@@ -30,7 +36,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("com.microsoft.playwright:playwright:1.63.0")
+    testImplementation("com.microsoft.playwright:playwright:$playwrightVersion")
     // Pin the HTTP client/core pair used by the bounded, DNS-pinned acquisition spike.
     testImplementation("org.apache.httpcomponents.client5:httpclient5:5.6.5")
     testImplementation("org.apache.httpcomponents.core5:httpcore5:5.4.4")
@@ -158,7 +164,7 @@ val pilot = sourceSets.create("pilot") {
     resources.include("spike/ui/**")
 }
 dependencies {
-    add(pilot.implementationConfigurationName, "com.microsoft.playwright:playwright:1.63.0")
+    add(pilot.implementationConfigurationName, "com.microsoft.playwright:playwright:$playwrightVersion")
     add(pilot.implementationConfigurationName, "org.apache.httpcomponents.client5:httpclient5:5.6.5")
     add(pilot.implementationConfigurationName, "org.apache.httpcomponents.core5:httpcore5:5.4.4")
     add(pilot.implementationConfigurationName, "org.apache.httpcomponents.core5:httpcore5-h2:5.4.4")
@@ -209,7 +215,10 @@ val stagePilot = tasks.register<Sync>("stagePilot") {
     from("packaging/README.txt")
     from("packaging/tools.example.properties")
 }
-val packageJdk = javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(21)) }
+val packageJdk = javaToolchains.launcherFor {
+    languageVersion.set(JavaLanguageVersion.of(21))
+    vendor.set(JvmVendorSpec.ADOPTIUM)
+}
 tasks.register<Exec>("packageWindowsApp") {
     group = "distribution"
     description = "Build a new Windows app-image with StreamBridge.exe and a private Java 21 runtime."
@@ -219,6 +228,10 @@ tasks.register<Exec>("packageWindowsApp") {
         LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")))
     doFirst {
         check(System.getProperty("os.name").startsWith("Windows")) { "Build the Windows image on Windows." }
+        check(packageJdk.get().metadata.javaRuntimeVersion.substringBefore("-") == packagedJavaVersion) {
+            "Packaging requires Eclipse Temurin $packagedJavaVersion; selected " +
+                packageJdk.get().metadata.javaRuntimeVersion + ". Set JAVA_HOME to the pinned JDK."
+        }
         val jdk = packageJdk.get().metadata.installationPath.asFile
         commandLine(
             jdk.resolve("bin/jpackage.exe").absolutePath,

@@ -261,7 +261,11 @@ class BrowserNetworkProxyTest {
             var browser=ChromiumLaunch.launch(playwright.chromium(),true);var context=browser.newContext()) {
             var page=context.newPage();page.setContent("<title>Owned receiver positive control</title>");
             var failure=assertThrows(IOException.class,()->LauncherDependencyProbe.verifyNoDirectWebRtc(page));
-            assertTrue(failure.getMessage().contains("direct WebRTC UDP"));
+            // Browser builds can prefer UDP or TURN/TCP. The positive control must
+            // detect either direct route; unrelated probe failures must not pass.
+            assertTrue(Set.of("Chromium sent direct WebRTC UDP outside gateway",
+                    "Chromium sent direct TURN TCP outside gateway").contains(failure.getMessage()),
+                    failure::getMessage);
         }
     }
 

@@ -12,7 +12,8 @@
 
 ## Before opening a change
 
-Use JDK 21 and Node.js 22. From the repository root on Windows:
+Use Eclipse Temurin JDK 21 (CI and EXE packaging: 21.0.13+9) and Node.js 24.22.1.
+From the repository root on Windows:
 
 ```shell
 .\backend\gradlew.bat -p backend clean build
