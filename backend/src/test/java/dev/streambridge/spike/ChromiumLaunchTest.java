@@ -11,6 +11,21 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.*;
 
 class ChromiumLaunchTest {
+    @org.junit.jupiter.api.io.TempDir Path root;
+    @Test void packagedBrowserWinsOverExternalCacheAndNeverUsesWorkingDirectory() throws Exception {
+        Path jar = Files.writeString(root.resolve("streambridge.jar"), "fixture");
+        Path external = root.resolve("external/chrome.exe");
+        assertEquals(external, ChromiumLaunch.executablePath(jar, external));
+        Path bundled = Files.createDirectories(root.resolve("native/chromium")).resolve("chrome.exe");
+        Files.writeString(bundled, "fixture");
+        assertEquals(bundled, ChromiumLaunch.executablePath(jar, external));
+        assertEquals(external, ChromiumLaunch.executablePath(root, external));
+        Files.delete(bundled);
+        assertThrows(IllegalStateException.class, () -> ChromiumLaunch.executablePath(jar, external));
+        Files.delete(bundled.getParent());
+        Files.writeString(root.resolve("bundled-browser.required"), "required");
+        assertThrows(IllegalStateException.class, () -> ChromiumLaunch.executablePath(jar, external));
+    }
     @Test void visibleAndHiddenLaunchesRequireSandboxAndSameFullBinary() {
         for (boolean headless : new boolean[]{false, true}) {
             BrowserType type = mock(BrowserType.class);

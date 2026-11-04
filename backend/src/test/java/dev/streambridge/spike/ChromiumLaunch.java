@@ -3,12 +3,33 @@ package dev.streambridge.spike;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserType;
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.util.List;
 import com.microsoft.playwright.options.Proxy;
 
 /** Shared by discovery and startup checks: a separate profile is not an OS sandbox. */
 final class ChromiumLaunch {
     private ChromiumLaunch() { }
+
+    static Path executablePath(BrowserType chromium) {
+        try {
+            Path location = Path.of(ChromiumLaunch.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            return executablePath(location, Path.of(chromium.executablePath()));
+        } catch (java.net.URISyntaxException failure) { throw new IllegalStateException(failure); }
+    }
+
+    static Path executablePath(Path codeLocation, Path external) {
+        // Only a packaged JAR can opt into an adjacent native payload; never use the working directory.
+        if (Files.isRegularFile(codeLocation)) {
+            Path directory = codeLocation.getParent().resolve("native/chromium");
+            if (Files.exists(codeLocation.getParent().resolve("bundled-browser.required")) || Files.exists(directory)) {
+                Path executable = directory.resolve("chrome.exe");
+                if (!Files.isRegularFile(executable)) throw new IllegalStateException("Packaged Chromium is incomplete: " + executable);
+                return executable;
+            }
+        }
+        return external;
+    }
 
     static Browser launch(BrowserType chromium, boolean headless) {
         return launch(chromium, headless, null);
@@ -20,7 +41,7 @@ final class ChromiumLaunch {
         var options = new BrowserType.LaunchOptions()
                 .setChromiumSandbox(true)
                 .setHeadless(headless)
-                .setExecutablePath(Path.of(chromium.executablePath()))
+                .setExecutablePath(executablePath(chromium))
                 .setTimeout(20_000);
         if (network != null) {
             options.setProxy(new Proxy(network.endpoint()).setBypass("<-loopback>"));

@@ -1,6 +1,7 @@
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.jar.JarFile
+import java.nio.file.Path
 
 plugins {
     java
@@ -161,7 +162,7 @@ val pilot = sourceSets.create("pilot") {
     java.srcDir("src/test/java")
     java.exclude("**/*Test.java", "**/LocalUiWorkerFixture.java")
     resources.srcDir("src/test/resources")
-    resources.include("spike/ui/**")
+    resources.include("spike/ui/**", "spike/launcher/**")
 }
 dependencies {
     add(pilot.implementationConfigurationName, "com.microsoft.playwright:playwright:$playwrightVersion")
@@ -191,7 +192,7 @@ val verifyPilotJar = tasks.register("verifyPilotJar") {
         JarFile(pilotJar.get().archiveFile.get().asFile).use { jar ->
             val names = jar.entries().asSequence().map { it.name }.toSet()
             check(jar.manifest.mainAttributes.getValue("Main-Class") == "dev.streambridge.spike.LocalUiLauncher")
-            for (required in listOf("dev/streambridge/spike/LocalUiLauncher.class", "spike/ui/index.html", "spike/ui/app.js", "spike/ui/app.css")) {
+            for (required in listOf("dev/streambridge/spike/LocalUiLauncher.class", "spike/ui/index.html", "spike/ui/app.js", "spike/ui/app.css", "spike/launcher/check-d3dcompiler.ps1")) {
                 check(required in names) { "Missing pilot entry: $required" }
             }
             check(names.none { it.endsWith("Test.class") || it.contains("Test$") || it.contains("LocalUiWorkerFixture") }) {
@@ -205,6 +206,8 @@ val verifyPilotJar = tasks.register("verifyPilotJar") {
     }
 }
 tasks.named("check") { dependsOn(verifyPilotJar) }
+// Optional, explicitly supplied unpacked browser. No automatic native downloads or license acceptance.
+val bundledChromium = providers.gradleProperty("bundledChromiumDirectory")
 val stagePilot = tasks.register<Sync>("stagePilot") {
     dependsOn(verifyPilotJar)
     into(layout.buildDirectory.dir("pilot-input"))
@@ -214,6 +217,30 @@ val stagePilot = tasks.register<Sync>("stagePilot") {
     from(rootProject.file("../docs/third-party.md"))
     from("packaging/README.txt")
     from("packaging/tools.example.properties")
+    if (bundledChromium.isPresent) {
+        from("packaging/bundled-browser.required")
+        from(bundledChromium) {
+            into("native/chromium")
+            exclude { it.file.name.equals("d3dcompiler_47.dll", ignoreCase = true) }
+        }
+    }
+    doFirst {
+        if (bundledChromium.isPresent) {
+            val source = file(bundledChromium.get())
+            check(Path.of(bundledChromium.get()).isAbsolute && source.resolve("chrome.exe").isFile) { "Supply an absolute unpacked Chromium directory containing chrome.exe." }
+            check(!source.toPath().toRealPath().startsWith(layout.buildDirectory.get().asFile.toPath().toRealPath())) {
+                "Browser input must be outside the build directory."
+            }
+            check(source.walkTopDown().none { it.isFile && it.extension.lowercase() in setOf("zip", "7z", "rar", "cab", "msi", "tar", "gz", "tgz", "bz2", "xz", "zst") }) {
+                "Supply unpacked files only, not nested archives that may contain the excluded DLL."
+            }
+        }
+    }
+    doLast {
+        check(destinationDir.walkTopDown().none { it.isFile && it.name.equals("d3dcompiler_47.dll", true) }) {
+            "Windows system d3dcompiler_47.dll must not be redistributed."
+        }
+    }
 }
 val packageJdk = javaToolchains.launcherFor {
     languageVersion.set(JavaLanguageVersion.of(21))
@@ -249,6 +276,9 @@ tasks.register<Exec>("packageWindowsApp") {
     }
     doLast {
         val image = destination.get().asFile.resolve("StreamBridge")
+        check(image.walkTopDown().none { it.isFile && it.name.equals("d3dcompiler_47.dll", true) }) {
+            "Packaged image unexpectedly includes Windows system d3dcompiler_47.dll."
+        }
         layout.buildDirectory.file("windows-app/latest-path.txt").get().asFile.writeText(image.absolutePath)
         logger.lifecycle("Application image: ${image.absolutePath}")
         logger.lifecycle("Launch StreamBridge.exe; keep the whole folder, including app and runtime.")

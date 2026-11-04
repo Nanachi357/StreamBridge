@@ -103,16 +103,23 @@ final class LauncherSupport {
             throw new IOException("Перевірка залежностей перевищила 60 секунд. Перевір Chromium і медіаінструменти.");
         }
         log.println("childExit=" + process.exitValue());
-        if (process.exitValue() != 0) throw new IOException(switch (process.exitValue()) {
+        if (process.exitValue() != 0) throw new IOException(probeFailure(process.exitValue()));
+        String acknowledgement = new String(process.getInputStream().readNBytes(4096), java.nio.charset.StandardCharsets.UTF_8).strip();
+        if (!acknowledgement.equals("JAVA_RUNTIME=" + System.getProperty("java.home")))
+            throw new IOException("Dependency child did not confirm the same Java runtime.");
+    }
+
+    static String probeFailure(int exit) {
+        return switch (exit) {
             case 21 -> "Не вдалося запустити FFmpeg. Перевір mediaToolsDirectory у " + LauncherSettings.file();
             case 22 -> "Не вдалося запустити FFprobe. Перевір mediaToolsDirectory у " + LauncherSettings.file();
             case 23 -> "Не вдалося запустити або перевірити Chromium з обов’язковою пісочницею. Захист не вимикався. Перевір chromiumDirectory у " + LauncherSettings.file();
             case 24 -> "Chromium не пройшов перевірку мережевої ізоляції WebRTC. Запуск зупинено; захист не вимикався.";
+            case 25 -> "У Windows відсутня системна d3dcompiler_47.dll (System32). Онови або віднови компоненти Windows офіційними засобами Microsoft. Не завантажуй окремі DLL зі сторонніх сайтів.";
+            case 26 -> "Системна d3dcompiler_47.dll не пройшла перевірку підпису або працездатності. Онови або віднови компоненти Windows офіційними засобами Microsoft. Деталі — у журналі діагностики.";
+            case 27 -> "Не вдалося виконати перевірку системної d3dcompiler_47.dll. Це не обов’язково пошкодження файла: перевір доступність Windows PowerShell та обмеження політик. Деталі — у журналі діагностики.";
             default -> "Не вдалося запустити Chromium Playwright. Перевір chromiumDirectory у " + LauncherSettings.file();
-        });
-        String acknowledgement = new String(process.getInputStream().readNBytes(4096), java.nio.charset.StandardCharsets.UTF_8).strip();
-        if (!acknowledgement.equals("JAVA_RUNTIME=" + System.getProperty("java.home")))
-            throw new IOException("Dependency child did not confirm the same Java runtime.");
+        };
     }
 
     /** Private per-user runtime state. Key never goes into shared logs or project files. */

@@ -145,6 +145,30 @@ Explicit environment variables take precedence. This is an unsigned developer
 app-image, **not the planned self-contained alpha installer**. The numeric Windows
 version is currently `0.1.0`; Gradle's development version is `0.1.0-SNAPSHOT`.
 
+For private packaging tests, an explicitly supplied **unpacked** browser directory
+can be included (absolute path containing `chrome.exe`):
+
+```powershell
+.\backend\gradlew.bat -p backend packageWindowsApp '-PbundledChromiumDirectory=C:/Tools/reviewed-chromium'
+```
+
+This stages the browser under `app/native/chromium`; that browser takes precedence
+over the external Playwright cache. A broken included browser does not silently
+fall back to another installation. `d3dcompiler_47.dll` is excluded at every depth,
+case-insensitively, and the final image is checked for its absence. Other files
+are preserved. Nested archives are rejected because they could reintroduce it.
+This mechanism does **not** clear a browser build for public redistribution;
+matching sources, notices and remaining component licenses still require review.
+FFmpeg/FFprobe remain external at this stage.
+
+On Windows, startup verifies the system `System32/d3dcompiler_47.dll` in a bounded,
+hidden Windows PowerShell process: Authenticode signature, native loading and a
+small shader compilation. Missing/unusable DLLs stop startup with instructions to
+update or repair Windows using official Microsoft tools. A blocked or timed-out
+diagnostic is reported separately from corruption. No DLL is downloaded, copied
+into Windows or repaired automatically; the browser sandbox remains enabled.
+Clean-Windows and visible-browser acceptance are still release gates.
+
 Hidden package diagnostic (use an absolute path for the report):
 
 ```powershell

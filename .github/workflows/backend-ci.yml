@@ -89,11 +89,31 @@ jobs:
       - name: Test UI
         run: node --test backend/src/test/js/ui-connection.test.cjs
       - name: Build developer app-image (not a release)
-        run: .\backend\gradlew.bat -p backend packageWindowsApp
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $browsers = @(Get-ChildItem -LiteralPath $env:PLAYWRIGHT_BROWSERS_PATH -Filter chrome.exe -Recurse -File)
+          if ($browsers.Count -ne 1) { throw 'Expected one full Chromium binary' }
+          $browser = $browsers[0].DirectoryName
+          # CI-only test payload; this is not permission to redistribute branded Chrome.
+          .\backend\gradlew.bat -p backend packageWindowsApp "-PbundledChromiumDirectory=$browser"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $image = (Get-Content backend/build/windows-app/latest-path.txt -Raw).Trim()
+          if (@(Get-ChildItem -LiteralPath $image -Recurse -File -Filter d3dcompiler_47.dll).Count -ne 0) { throw 'Excluded system DLL found in package' }
+          $payload = Join-Path $image 'app/native/chromium'
+          $original = @(Get-ChildItem -LiteralPath $browser -Recurse -File)
+          if (@($original | Where-Object Name -IEQ 'd3dcompiler_47.dll').Count -eq 0) { throw 'Fixture lacks the DLL whose exclusion must be tested' }
+          $expected = @($original | Where-Object Name -INE 'd3dcompiler_47.dll')
+          if (@(Get-ChildItem -LiteralPath $payload -Recurse -File).Count -ne $expected.Count) { throw 'Unexpected browser payload count' }
+          foreach ($file in $expected) {
+            $target = Join-Path $payload ([IO.Path]::GetRelativePath($browser, $file.FullName))
+            if ((Get-FileHash -LiteralPath $file.FullName).Hash -ne (Get-FileHash -LiteralPath $target).Hash) { throw 'Browser payload mismatch' }
+          }
       - name: Check packaged application without visible windows
         run: |
           $ErrorActionPreference = 'Stop'
           $image = (Get-Content backend/build/windows-app/latest-path.txt -Raw).Trim()
+          # The bundled browser must work even when the external browser cache is absent.
+          $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $env:RUNNER_TEMP 'absent-browser-cache'
           $report = Join-Path $env:RUNNER_TEMP 'streambridge-self-check.json'
           $process = Start-Process -FilePath (Join-Path $image 'StreamBridge.exe') -ArgumentList ('--self-check="' + $report + '"') -WorkingDirectory $image -WindowStyle Hidden -PassThru
           if (!$process.WaitForExit(60000)) { $process.Kill(); throw 'Package self-check timed out' }

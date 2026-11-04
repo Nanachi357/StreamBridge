@@ -14,6 +14,20 @@ Copy tools.example.properties there and edit the paths. Use forward slashes.
 Alternatively set PLAYWRIGHT_BROWSERS_PATH and STREAMBRIDGE_FFMPEG_DIR; explicit
 environment values take precedence. No system settings are changed automatically.
 
+An optional private-test build may include Chromium under app/native/chromium.
+When present, it takes precedence over the external cache; missing chrome.exe in
+that directory is an error, not a request to use another browser. FFmpeg remains
+external. Including a browser does not establish permission to redistribute it.
+
+The package excludes d3dcompiler_47.dll and relies on the x64 Windows system copy.
+Normal startup checks its signature, native loading and shader compilation using
+a hidden, bounded Windows PowerShell process. Missing/unusable components stop
+startup: update or repair Windows using official Microsoft tools. Do not download
+individual DLLs from third-party sites. If the diagnostic cannot run (for example,
+PowerShell is restricted), that is reported separately from DLL corruption. No
+system files or policies are changed. Other browser libraries retain their own
+license/source requirements. Clean-Windows acceptance remains outstanding.
+
 The launcher opens the local web UI in your saved/default browser. Use its Finish
 button to stop the server; closing the UI tab does not stop it. If an older source
 launcher is running, finish it first, otherwise this launcher reuses that server.

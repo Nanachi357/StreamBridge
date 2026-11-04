@@ -29,3 +29,12 @@ installer needs matching source/build material for it and its linked dependencie
 or a separately reviewed alternative. Playwright's own FFmpeg helper is a different
 binary and needs its own assessment if included. Passing tests or a clean
 top-level dependency scan does not clear bundled native libraries for release.
+
+Optional browser staging (`-PbundledChromiumDirectory=<absolute-unpacked-directory>`)
+omits `d3dcompiler_47.dll` and verifies its absence from the resulting app-image.
+Startup relies on and checks the Windows system copy. Do not embed the original
+complete browser archive in an installer: it would still redistribute that DLL.
+This policy avoids shipping that one Microsoft binary; it does not resolve the
+separate `dxcompiler.dll`, Chromium/ANGLE, embedded FFmpeg, or other third-party
+obligations. The optional mechanism is for private validation until the complete
+native payload and corresponding materials have passed redistribution review.
