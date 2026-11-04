@@ -45,7 +45,13 @@ dependencies {
 }
 
 tasks.withType<Test>().configureEach {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // Candidate-only contract tests must not become skipped tests in the normal
+        // Windows job, which deliberately rejects missing integration prerequisites.
+        if (System.getenv("STREAMBRIDGE_MINIMAL_FFMPEG_CHECK") != "1") excludeTags("minimal-ffmpeg")
+    }
+    inputs.property("mediaToolsDirectory", System.getenv("STREAMBRIDGE_FFMPEG_DIR") ?: "")
+    inputs.property("fixtureToolsDirectory", System.getenv("STREAMBRIDGE_FIXTURE_FFMPEG_DIR") ?: "")
     // CI console logs must retain assertion values and causes when no report is uploaded.
     testLogging { exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL }
     systemProperty("streambridge.testClasspath", sourceSets["test"].runtimeClasspath.asPath)

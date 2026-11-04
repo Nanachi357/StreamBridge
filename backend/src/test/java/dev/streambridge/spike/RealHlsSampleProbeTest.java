@@ -20,15 +20,17 @@ class RealHlsSampleProbeTest {
     private void encodedTransfer(String mode) throws Exception {
         String configured = System.getenv("STREAMBRIDGE_FFMPEG_DIR");
         org.junit.jupiter.api.Assumptions.assumeTrue(configured != null, "Encoded-media check requires FFmpeg/FFprobe");
-        Path tools = Path.of(configured), ffmpeg = HlsDownloadSpike.executable(tools, "ffmpeg.exe");
+        Path tools = Path.of(configured);
+        Path generator = HlsDownloadSpike.executable(Path.of(System.getenv()
+                .getOrDefault("STREAMBRIDGE_FIXTURE_FFMPEG_DIR", configured)), "ffmpeg.exe");
         boolean separate = mode.equals("separate") || mode.equals("missing-audio");
         boolean inBand = mode.equals("in-band") || mode.equals("missing-in-band");
         Path video = directory.resolve("fixture.ts"), audio = directory.resolve("audio.ts");
-        var command = new ArrayList<>(List.of(ffmpeg.toString(), "-nostdin", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=96x64:rate=10"));
+        var command = new ArrayList<>(List.of(generator.toString(), "-nostdin", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=96x64:rate=10"));
         if (mode.equals("muxed") || mode.equals("in-band")) command.addAll(List.of("-f", "lavfi", "-i", "sine=frequency=440"));
         command.addAll(List.of("-t", "2", "-c:v", "libx264", "-threads", "1", "-bf", "0", "-g", "10", "-c:a", "aac", "-f", "mpegts", video.toString()));
         HlsDownloadSpike.runChecked(command, directory.resolve("generate.log"), 10_000);
-        if (mode.equals("separate")) HlsDownloadSpike.runChecked(List.of(ffmpeg.toString(), "-nostdin", "-v", "error", "-f", "lavfi", "-i", "sine=frequency=880",
+        if (mode.equals("separate")) HlsDownloadSpike.runChecked(List.of(generator.toString(), "-nostdin", "-v", "error", "-f", "lavfi", "-i", "sine=frequency=880",
                 "-t", "2", "-c:a", "aac", "-f", "mpegts", audio.toString()), directory.resolve("generate-audio.log"), 10_000);
         byte[] videoBytes = Files.readAllBytes(video);
         // A selected audio playlist returning valid TS with video only must not silently lose audio.

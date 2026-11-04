@@ -2,3 +2,4 @@
 *.bat text eol=crlf
 *.sh text eol=lf
 backend/gradlew text eol=lf
+native/ffmpeg/sources.lock text eol=lf

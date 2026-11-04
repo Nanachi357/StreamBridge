@@ -38,3 +38,11 @@ This policy avoids shipping that one Microsoft binary; it does not resolve the
 separate `dxcompiler.dll`, Chromium/ANGLE, embedded FFmpeg, or other third-party
 obligations. The optional mechanism is for private validation until the complete
 native payload and corresponding materials have passed redistribution review.
+
+An owned [FFmpeg build recipe](../native/ffmpeg/README.md) now targets FFmpeg 9.0.2
+for Windows x64, shared libraries, LGPL-2.1-or-later configuration and no external
+codec libraries. Its source archive/hash, frozen toolchain inputs, configuration,
+licenses and generated binary inventory are retained separately from Git.
+It is a compatibility candidate; the installed launcher and release payload are
+not switched automatically. MinGW-w64/GCC runtime notices, complete source/build
+materials and final Windows installer acceptance still need review before release.

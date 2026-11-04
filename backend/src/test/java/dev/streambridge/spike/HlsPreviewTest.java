@@ -94,14 +94,16 @@ class HlsPreviewTest {
         String configured = System.getenv("STREAMBRIDGE_FFMPEG_DIR");
         assumeTrue(configured != null, "Optional encoded-media check requires FFmpeg/FFprobe directory");
         Path tools = Path.of(configured), ffmpeg = HlsDownloadSpike.executable(tools, "ffmpeg.exe");
+        Path generator = HlsDownloadSpike.executable(Path.of(System.getenv()
+                .getOrDefault("STREAMBRIDGE_FIXTURE_FFMPEG_DIR", configured)), "ffmpeg.exe");
         for (String mode : List.of("muxed", "separate", "silent")) {
             Path directory = Files.createDirectory(root.resolve(mode));
             Path video = directory.resolve("fixture.ts"), audio = directory.resolve("audio.ts");
-            var command = new ArrayList<>(List.of(ffmpeg.toString(), "-nostdin", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=960x540:rate=24000/1001"));
+            var command = new ArrayList<>(List.of(generator.toString(), "-nostdin", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=960x540:rate=24000/1001"));
             if (mode.equals("muxed")) command.addAll(List.of("-f", "lavfi", "-i", "sine=frequency=440"));
             command.addAll(List.of("-t", "8", "-c:v", "libx264", "-threads", "2", "-preset", "fast", "-bf", "3", "-c:a", "aac", "-f", "mpegts", video.toString()));
             HlsDownloadSpike.runChecked(command, directory.resolve("generation.log"), 20_000);
-            if (mode.equals("separate")) HlsDownloadSpike.runChecked(List.of(ffmpeg.toString(), "-nostdin", "-v", "error", "-f", "lavfi", "-i", "sine=frequency=880",
+            if (mode.equals("separate")) HlsDownloadSpike.runChecked(List.of(generator.toString(), "-nostdin", "-v", "error", "-f", "lavfi", "-i", "sine=frequency=880",
                     "-t", "8", "-c:a", "aac", "-f", "mpegts", audio.toString()), directory.resolve("audio-generation.log"), 20_000);
             URI v = URI.create("https://example.org/video.ts"), a = URI.create("https://example.org/audio.ts");
             var playlists = new ArrayList<HlsVodPlaylist>(); playlists.add(playlist(v));
@@ -117,8 +119,10 @@ class HlsPreviewTest {
             assertFalse(Files.exists(directory.resolve("preview-input-0.ts"))); assertFalse(Files.exists(directory.resolve("preview.part")));
             HlsDownloadSpike.runChecked(List.of(ffmpeg.toString(), "-nostdin", "-v", "error", "-xerror", "-protocol_whitelist", "file", "-i", result.toString(),
                     "-map", "0:v", "-map", mode.equals("silent") ? "0:a?" : "0:a", "-f", "null", "-"), directory.resolve("decode.log"), 15_000);
-            assertDecodedPrefixUnchanged(ffmpeg, video, result, "v:0", directory);
-            if (!mode.equals("silent")) assertDecodedPrefixUnchanged(ffmpeg, mode.equals("separate") ? audio : video, result, "a:0", directory);
+            // The independent full-tool oracle needs framemd5/PCM output; runtime decoding above
+            // and all application operations still use the candidate under test.
+            assertDecodedPrefixUnchanged(generator, video, result, "v:0", directory);
+            if (!mode.equals("silent")) assertDecodedPrefixUnchanged(generator, mode.equals("separate") ? audio : video, result, "a:0", directory);
             for (Path media : List.of(video, result)) {
                 Path metadata = directory.resolve(media.getFileName() + "-dimensions.log");
                 HlsDownloadSpike.runChecked(List.of(HlsDownloadSpike.executable(tools, "ffprobe.exe").toString(),
@@ -134,7 +138,7 @@ class HlsPreviewTest {
             }, tools, TransferFeedback.NONE, 7500);
             double longer = Double.parseDouble(Files.readString(directory.resolve("preview-probe.log")).strip());
             assertTrue(longer >= 7 && longer <= 8.5);
-            assertDecodedPrefixUnchanged(ffmpeg, video, result, "v:0", directory);
+            assertDecodedPrefixUnchanged(generator, video, result, "v:0", directory);
         }
     }
     private void verifyPreviewThenDecline(Path tools, byte[] video) throws Exception {

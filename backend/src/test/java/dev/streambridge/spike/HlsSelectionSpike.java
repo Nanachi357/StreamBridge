@@ -45,7 +45,9 @@ public final class HlsSelectionSpike {
         Path fixtureDirectory = Path.of(System.getProperty("streambridge.selectionFixture", "build/hls-selection-fixture"));
         if (prepare) {
             HlsSelectionFixture.prepare(fixtureDirectory,
-                    Path.of(System.getProperty("streambridge.hlsFixture", "build/hls-fixture")), ffmpeg);
+                    Path.of(System.getProperty("streambridge.hlsFixture", "build/hls-fixture")),
+                    HlsDownloadSpike.executable(Path.of(System.getenv()
+                            .getOrDefault("STREAMBRIDGE_FIXTURE_FFMPEG_DIR", toolDirectory)), "ffmpeg.exe"));
             return;
         }
         if (verifyAll && (candidateIndex != null || variantIndex != null || audioIndex != null)) {

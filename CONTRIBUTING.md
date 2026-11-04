@@ -49,6 +49,13 @@ deliberately. Public dependency/security review remains separate from passing te
 
 ## Before committing or reporting
 
+The optional [minimal FFmpeg recipe](native/ffmpeg/README.md) builds a separate
+Windows media candidate. Use `STREAMBRIDGE_FIXTURE_FFMPEG_DIR` for the full
+development encoder and `STREAMBRIDGE_FFMPEG_DIR` for the candidate under test.
+`STREAMBRIDGE_MINIMAL_FFMPEG_CHECK=1` includes additional native acceptance tests;
+these tests are excluded from ordinary CI, not silently counted as passing.
+Building the candidate does not replace the installed application's tools.
+
 Inspect the actual staged diff, including new files. Do not rely only on .gitignore.
 Scan the proposed source tree with Gitleaks and manually inspect matches. Test data
 that resembles a credential needs an explanation, not a broad scanner suppression.
