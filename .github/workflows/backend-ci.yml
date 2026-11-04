@@ -24,9 +24,13 @@ jobs:
         with:
           persist-credentials: false
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        env:
+          # Exercise installation rather than relying on the runner's preinstalled JDK.
+          RUNNER_TOOL_CACHE: ${{ runner.temp }}/streambridge-jdk-cache
         with:
           distribution: temurin
-          java-version: '21.0.13+9'
+          # Match Adoptium's full build metadata when resolving outside the tool cache.
+          java-version: '21.0.13+9.0.LTS'
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24.22.1'
@@ -50,9 +54,13 @@ jobs:
         with:
           persist-credentials: false
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        env:
+          # Exercise installation rather than relying on the runner's preinstalled JDK.
+          RUNNER_TOOL_CACHE: ${{ runner.temp }}/streambridge-jdk-cache
         with:
           distribution: temurin
-          java-version: '21.0.13+9'
+          # Match Adoptium's full build metadata when resolving outside the tool cache.
+          java-version: '21.0.13+9.0.LTS'
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24.22.1'
