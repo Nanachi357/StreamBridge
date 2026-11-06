@@ -22,16 +22,17 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+      - name: Test source acquisition without network
+        shell: pwsh
+        run: ./native/ffmpeg/Test-SourceDownload.ps1
+      - name: Download and verify pinned FFmpeg source
+        shell: pwsh
+        run: ./native/ffmpeg/Get-Source.ps1 -DestinationDirectory "$env:RUNNER_TEMP/ffmpeg-bundle/sources"
       - name: Build Windows tools with the pinned recipe
         shell: bash
         run: |
           set -euo pipefail
-          source native/ffmpeg/sources.lock
           output="$RUNNER_TEMP/ffmpeg-bundle"
-          mkdir -p "$output/sources"
-          archive="$output/sources/ffmpeg-$FFMPEG_VERSION.tar.xz"
-          curl --fail --location --retry 3 --connect-timeout 20 --max-time 600 "$FFMPEG_URL" -o "$archive"
-          echo "$FFMPEG_SHA256  $archive" | sha256sum --check --strict
           docker build --platform linux/amd64 --tag streambridge-ffmpeg-ci native/ffmpeg
           docker run --rm --platform linux/amd64 --network none \
             --mount "type=bind,source=$PWD/native/ffmpeg,target=/recipe,readonly" \

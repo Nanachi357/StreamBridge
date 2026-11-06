@@ -5,10 +5,8 @@ source /recipe/sources.lock
 archive="ffmpeg-${FFMPEG_VERSION}.tar.xz"
 mkdir -p /out/sources /out/evidence
 if [[ ! -f "/out/sources/$archive" ]]; then
-    curl --fail --location --retry 3 --connect-timeout 20 --max-time 600 \
-        "$FFMPEG_URL" -o "/out/sources/$archive.partial"
-    echo "$FFMPEG_SHA256  /out/sources/$archive.partial" | sha256sum --check --strict
-    mv "/out/sources/$archive.partial" "/out/sources/$archive"
+    echo 'Source archive missing; run Get-Source.ps1 before the offline build.' >&2
+    exit 1
 fi
 echo "$FFMPEG_SHA256  /out/sources/$archive" | sha256sum --check --strict
 # Build on the container filesystem, not the Windows bind mount. Never overwrite an output.
@@ -62,6 +60,7 @@ cp libavcodec/jfdctfst.c libavcodec/jfdctint_template.c libavcodec/jrevdct.c /ou
 printf 'This software is based in part on the work of the Independent JPEG Group.\nNo local FFmpeg source modifications.\n' > /out/licenses/ffmpeg/NOTICE.txt
 cp /recipe/build.sh /recipe/Build.ps1 /recipe/Dockerfile /recipe/install-toolchain.sh /recipe/sources.lock /recipe/README.md /recipe/Verify-Materials.ps1 /recipe/Read-PeImports.ps1 /recipe/development.sha256 /recipe/Test-Materials.ps1 /recipe/Test-OutputDirectory.ps1 /recipe/BUNDLE-NOTICE.txt /out/recipe/
 cp /recipe/BUNDLE-NOTICE.txt /out/NOTICE.txt
+cp /recipe/Get-Source.ps1 /recipe/Test-SourceDownload.ps1 /out/recipe/
 cp /toolchain-downloads.txt /out/evidence/
 dpkg-query -W > /out/evidence/debian-packages.txt
 x86_64-w64-mingw32-gcc-win32 -v > /out/evidence/compiler.txt 2>&1

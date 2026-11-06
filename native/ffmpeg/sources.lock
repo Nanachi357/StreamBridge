@@ -3,4 +3,6 @@
 # (FFmpeg release key obtained from https://ffmpeg.org/ffmpeg-devel.asc).
 FFMPEG_VERSION=9.0.2
 FFMPEG_URL=https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz
+# Byte-identical release archive; the same pinned SHA-256 is mandatory.
+FFMPEG_MIRROR_URL=https://distfiles.macports.org/ffmpeg/ffmpeg-9.0.2.tar.xz
 FFMPEG_SHA256=8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e

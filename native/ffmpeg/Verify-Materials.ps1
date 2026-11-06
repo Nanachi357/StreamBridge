@@ -31,7 +31,7 @@ foreach ($name in @('avcodec','avfilter','avformat','avutil','swresample','swsca
     $required += "development/include/lib$name/$name.h", "development/lib/lib$name.dll.a"
 }
 foreach ($file in $required) { if (!$listed.Contains($file)) { throw "Required material absent: $file" } }
-foreach ($file in @('build.sh','Build.ps1','Dockerfile','install-toolchain.sh','sources.lock','README.md','Verify-Materials.ps1','Read-PeImports.ps1','development.sha256','Test-Materials.ps1','Test-OutputDirectory.ps1','BUNDLE-NOTICE.txt')) {
+foreach ($file in @('build.sh','Build.ps1','Get-Source.ps1','Test-SourceDownload.ps1','Dockerfile','install-toolchain.sh','sources.lock','README.md','Verify-Materials.ps1','Read-PeImports.ps1','development.sha256','Test-Materials.ps1','Test-OutputDirectory.ps1','BUNDLE-NOTICE.txt')) {
     $relative = "recipe/$file"
     if (!$listed.Contains($relative) -or (Get-FileHash -LiteralPath (Join-Path $root $relative)).Hash -ne (Get-FileHash -LiteralPath (Join-Path $PSScriptRoot $file)).Hash) { throw "Recipe does not match this checkout: $file" }
 }

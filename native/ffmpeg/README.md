@@ -89,6 +89,17 @@ existing simulated process tests. Run the full Java/UI suites before acceptance.
 
 ## Material checks and CI
 
+`Get-Source.ps1` is shared by the local builder and native CI. It tries the
+official release server, then the pinned MacPorts mirror, with three attempts
+per server. Each attempt has a 20-second connection and 60-second total timeout;
+retries wait two seconds. TLS verification stays enabled and redirects must use
+HTTPS. Personal curl configuration is ignored. Failed partial files are deleted.
+Only bytes matching the SHA-256 in `sources.lock` are published to the source
+cache; a hash mismatch stops immediately, including for an existing cached file.
+The mirror is a transport fallback, not an alternative version or trust anchor.
+`Test-SourceDownload.ps1` exercises retries, fallback, exhaustion, corruption,
+cache reuse, cleanup and concurrent destination protection without network access.
+
 Run `./native/ffmpeg/Verify-Materials.ps1 -BundleDirectory <output>` before using
 or packaging a bundle. It verifies the complete manifest, required notices and
 development files, source hash, exact recipe, LGPL/shared build configuration,

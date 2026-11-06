@@ -6,6 +6,7 @@ Push-Location $testRoot
 try {
     $recipe = New-Item -ItemType Directory -Path (Join-Path $testRoot 'recipe')
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Build.ps1') -Destination $recipe.FullName
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Get-Source.ps1') -Destination $recipe.FullName
     $caller = New-Item -ItemType Directory -Path (Join-Path $testRoot 'caller')
     $processDirectory = New-Item -ItemType Directory -Path (Join-Path $testRoot 'process')
     [Environment]::CurrentDirectory = $processDirectory.FullName
