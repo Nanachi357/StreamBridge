@@ -36,12 +36,32 @@ printf '\n' >> /out/evidence/configure-command.txt
 cp config.h config_components.h ffbuild/config.mak /out/evidence/
 make -j "${BUILD_JOBS:-4}" > /out/evidence/compile.log 2>&1
 make install > /out/evidence/install.log 2>&1
-mkdir -p /out/runtime /out/licenses/ffmpeg /out/licenses/toolchain /out/recipe
+# Compile and link against the installed development set without executing Windows code.
+cat > /work/development-smoke.c <<'EOF'
+#include <libavcodec/avcodec.h>
+#include <libavfilter/avfilter.h>
+#include <libavformat/avformat.h>
+#include <libavutil/avutil.h>
+#include <libswresample/swresample.h>
+#include <libswscale/swscale.h>
+int main(void) {
+    return !(avcodec_version() && avfilter_version() && avformat_version() &&
+             avutil_version() && swresample_version() && swscale_version());
+}
+EOF
+x86_64-w64-mingw32-gcc-win32 -I/work/install/include /work/development-smoke.c \
+    -L/work/install/lib -lavcodec -lavfilter -lavformat -lavutil -lswresample -lswscale \
+    -o /work/development-smoke.exe > /out/evidence/development-smoke.log 2>&1
+echo 'PASS: all six public headers and import libraries compile and link' >> /out/evidence/development-smoke.log
+mkdir -p /out/runtime /out/licenses/ffmpeg /out/licenses/toolchain /out/recipe /out/development
 cp /work/install/bin/*.exe /work/install/bin/*.dll /out/runtime/
+# Keep headers and import libraries with corresponding source for rebuilding/relinking.
+cp -R /work/install/include /work/install/lib /out/development/
 cp COPYING* LICENSE.md /out/licenses/ffmpeg/
 cp libavcodec/jfdctfst.c libavcodec/jfdctint_template.c libavcodec/jrevdct.c /out/licenses/ffmpeg/
 printf 'This software is based in part on the work of the Independent JPEG Group.\nNo local FFmpeg source modifications.\n' > /out/licenses/ffmpeg/NOTICE.txt
-cp /recipe/build.sh /recipe/Build.ps1 /recipe/Dockerfile /recipe/install-toolchain.sh /recipe/sources.lock /recipe/README.md /out/recipe/
+cp /recipe/build.sh /recipe/Build.ps1 /recipe/Dockerfile /recipe/install-toolchain.sh /recipe/sources.lock /recipe/README.md /recipe/Verify-Materials.ps1 /recipe/Read-PeImports.ps1 /recipe/development.sha256 /recipe/Test-Materials.ps1 /recipe/Test-OutputDirectory.ps1 /recipe/BUNDLE-NOTICE.txt /out/recipe/
+cp /recipe/BUNDLE-NOTICE.txt /out/NOTICE.txt
 cp /toolchain-downloads.txt /out/evidence/
 dpkg-query -W > /out/evidence/debian-packages.txt
 x86_64-w64-mingw32-gcc-win32 -v > /out/evidence/compiler.txt 2>&1
@@ -53,5 +73,5 @@ cp -L /usr/share/common-licenses/* /out/licenses/toolchain/common-licenses/
 for file in /out/runtime/*; do
     x86_64-w64-mingw32-objdump -p "$file" > "/out/evidence/$(basename "$file").pe.txt"
 done
-(cd /out && find runtime licenses recipe sources -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+(cd /out && find runtime licenses recipe sources development evidence NOTICE.txt -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
 echo 'Build complete. Windows compatibility and redistribution review are separate gates.'

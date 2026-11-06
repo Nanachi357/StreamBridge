@@ -44,5 +44,12 @@ for Windows x64, shared libraries, LGPL-2.1-or-later configuration and no extern
 codec libraries. Its source archive/hash, frozen toolchain inputs, configuration,
 licenses and generated binary inventory are retained separately from Git.
 It is a compatibility candidate; the installed launcher and release payload are
-not switched automatically. MinGW-w64/GCC runtime notices, complete source/build
-materials and final Windows installer acceptance still need review before release.
+not switched automatically. The build now retains a matching source archive,
+headers/import libraries, recipe, notices and evidence under one checked manifest;
+`native/ffmpeg/Verify-Materials.ps1` checks completeness and the expected profile.
+The separate native CI builds and tests that candidate rather than substituting
+the fixture generator. Its artifacts are temporary developer outputs, not releases.
+Before shipping, retain the matching materials beside the binary release, expose
+their source link and notices in the distribution, and complete final Windows
+installer acceptance. Integrity checks do not establish patent clearance or
+absence of vulnerabilities in the native code.

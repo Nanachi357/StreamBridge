@@ -1,0 +1,30 @@
+StreamBridge FFmpeg media-tool bundle
+
+FFmpeg and FFprobe are third-party software, not covered by StreamBridge's MIT
+license. Copyright belongs to the FFmpeg developers and respective contributors.
+This configuration is licensed under GNU LGPL version 2.1 or later. The full
+license and upstream licensing inventory are in licenses/ffmpeg/.
+
+This software is based in part on the work of the Independent JPEG Group.
+No local FFmpeg source modifications were made, including to the three JPEG
+source files whose notices are preserved in licenses/ffmpeg/.
+
+The runtime uses shared FFmpeg DLLs. Keep all eight runtime files together.
+Compatible modified DLLs may replace these libraries. The source archive,
+configuration, build scripts, headers and import libraries accompany this bundle
+under sources/, evidence/, recipe/ and development/. Paths in development/lib/
+pkgconfig describe the build container; regenerate them when rebuilding elsewhere.
+
+MinGW-w64 runtime/header notices and GCC runtime notices, including the GCC
+Runtime Library Exception, are retained under licenses/toolchain/. Windows
+system DLLs are dependencies supplied by Windows and are not included here.
+The compiler and Docker image themselves are build tools, not bundled runtime.
+
+Keep these notices with the runtime. If shipping runtime separately, provide the
+complete matching source/build-material archive alongside that exact binary
+download, with an explicit link in the release documentation. CI artifact expiry
+is not durable source availability. Retain both archives for published releases.
+
+The license texts govern copying and modification. This bundle provides no
+warranty; see the full notices. Its manifest verifies material integrity, not
+patent clearance, absence of vulnerabilities or final-installer acceptance.

@@ -36,6 +36,8 @@ Outputs under the ignored `build/` directory:
 - `recipe/`, `licenses/`, `evidence/`: recipe, notices, configuration, compiler and
   installed package inventory, build logs and PE import inspection.
 - `SHA256SUMS`: hashes of the generated distribution materials.
+- `development/`: matching headers and import libraries for rebuilding/relinking.
+- `NOTICE.txt`: attribution, modification status and source-material instructions.
 
 Do not commit generated binaries, downloaded archives, build logs or Docker
 images. Retain the matching source/recipe/notices with any binary release.
@@ -84,6 +86,40 @@ full-tool development setups. The opt-in minimal-profile acceptance tests requir
 both paths explicitly and refuse to test the generator as the candidate. They
 exercise actual native process progress/cancellation/timeouts in addition to the
 existing simulated process tests. Run the full Java/UI suites before acceptance.
+
+## Material checks and CI
+
+Run `./native/ffmpeg/Verify-Materials.ps1 -BundleDirectory <output>` before using
+or packaging a bundle. It verifies the complete manifest, required notices and
+development files, source hash, exact recipe, LGPL/shared build configuration,
+eight-file runtime inventory and actual Windows PE imports, compared with the
+recorded reports. The bounded static PE reader never loads or executes the tools;
+this AMD64 profile rejects bound/delayed imports, all export forwarders (including
+ordinal-only exports), malformed directory ranges and overlapping virtual or file
+sections. Section alignment, image/header bounds and file-backed RVA ranges are
+checked separately; unsupported layouts fail closed.
+The full development file inventory and hashes are pinned in `development.sha256`
+in the checkout, independently of the bundle's own manifest. Update that inventory
+only after reviewing a new source/toolchain/profile build. The build also compiles
+and links an example against all six installed libraries without executing it.
+Configuration must use configure's flat, guarded definition format; conflicting
+definitions, undefinitions, conditional overrides, bare CR line endings and hidden
+control characters are rejected. LF and CRLF configurations are supported. Recipe files use
+LF endings on both platforms so their bytes survive checkout and artifact transfer.
+`Test-Materials.ps1` additionally rejects tampering, missing source, extra runtime
+files and unsafe/duplicate manifest paths. A manifest is an integrity check,
+not authentication of an untrusted bundle or a substitute for a license review.
+
+The separate **Native FFmpeg build and compatibility** workflow builds the tools
+on Linux with the same Docker recipe, with networking disabled for compilation.
+It verifies and transfers the complete bundle to Windows, then runs all six
+candidate acceptance cases plus preview, acquisition and process-control suites.
+The full FFmpeg used to generate fixtures stays separate from the candidate.
+The ordinary application workflow remains a separate check.
+
+CI artifacts expire after 14 days and are developer candidates, not installers.
+Do not use them as the only source delivery for a published release. Preserve the
+matching runtime and material archive in the release, with a direct source link.
 
 ## Redistribution review
 

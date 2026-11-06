@@ -42,6 +42,11 @@ class MinimalFfmpegTest {
         String encoders = output("encoders", List.of(ffmpeg.toString(), "-hide_banner", "-encoders"));
         assertFalse(encoders.contains("libx264")); assertFalse(encoders.contains("libx265"));
         assertTrue(encoders.contains("wrapped_avframe")); assertTrue(encoders.contains("pcm_s16le"));
+        for (String tool : List.of("ffmpeg.exe", "ffprobe.exe")) {
+            String license = output(tool + "-license", List.of(tools.resolve(tool).toString(), "-hide_banner", "-L"));
+            assertTrue(license.contains("GNU Lesser General Public"), license);
+            assertTrue(license.contains("version 2.1"), license);
+        }
     }
 
     @ParameterizedTest @ValueSource(strings = {"libx264", "libx265"})
