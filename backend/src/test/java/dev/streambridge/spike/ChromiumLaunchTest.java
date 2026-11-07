@@ -41,7 +41,7 @@ class ChromiumLaunchTest {
             assertEquals(headless, options.getValue().headless);
             assertEquals(executable, options.getValue().executablePath);
             assertEquals(20_000.0, options.getValue().timeout);
-            assertNull(options.getValue().args); // No switches weakening the sandbox.
+            assertEquals(ChromiumFeaturePolicy.arguments(), options.getValue().args);
             assertNull(options.getValue().ignoreAllDefaultArgs);
             assertNull(options.getValue().ignoreDefaultArgs);
         }
@@ -68,6 +68,7 @@ class ChromiumLaunchTest {
             assertEquals("<-loopback>",options.getValue().proxy.bypass);
             assertTrue(options.getValue().args.contains("--disable-quic"));
             assertTrue(options.getValue().args.contains("--webrtc-ip-handling-policy=disable_non_proxied_udp"));
+            assertTrue(options.getValue().args.containsAll(ChromiumFeaturePolicy.arguments()));
             assertEquals(Boolean.TRUE,options.getValue().chromiumSandbox);
             network.close();assertThrows(IllegalStateException.class,()->ChromiumLaunch.launch(type,false,network));
             verify(type,times(1)).launch(any(BrowserType.LaunchOptions.class));
@@ -104,6 +105,7 @@ class ChromiumLaunchTest {
             diagnostics.setDefaultTimeout(10_000);
             diagnostics.navigate("chrome://version");
             String commandLine = diagnostics.locator("#command_line").innerText();
+            ChromiumFeaturePolicyTest.assertEffectiveFeatures(commandLine);
             assertEquals(headless, commandLine.contains("--headless"));
             for (String flag : new String[]{"--no-sandbox", "--disable-gpu-sandbox",
                     "--disable-setuid-sandbox", "--single-process"}) {

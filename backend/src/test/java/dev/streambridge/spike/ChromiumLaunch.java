@@ -4,7 +4,7 @@ import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserType;
 import java.nio.file.Path;
 import java.nio.file.Files;
-import java.util.List;
+import java.util.ArrayList;
 import com.microsoft.playwright.options.Proxy;
 
 /** Shared by discovery and startup checks: a separate profile is not an OS sandbox. */
@@ -43,15 +43,17 @@ final class ChromiumLaunch {
                 .setHeadless(headless)
                 .setExecutablePath(executablePath(chromium))
                 .setTimeout(20_000);
+        var args = new ArrayList<>(ChromiumFeaturePolicy.arguments());
         if (network != null) {
             options.setProxy(new Proxy(network.endpoint()).setBypass("<-loopback>"));
             // Full Chrome uses webrtc-ip-handling-policy; the similarly named
             // force-webrtc-ip-handling-policy switch does not protect this binary.
             // Keep the real UDP/TURN receiver regression test when upgrading Chromium.
-            options.setArgs(List.of("--disable-quic",
-                    "--webrtc-ip-handling-policy=disable_non_proxied_udp",
-                    "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1"));
+            args.add("--disable-quic");
+            args.add("--webrtc-ip-handling-policy=disable_non_proxied_udp");
+            args.add("--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1");
         }
+        options.setArgs(args);
         return chromium.launch(options);
     }
 }

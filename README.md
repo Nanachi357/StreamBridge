@@ -50,6 +50,10 @@ paywalls, CAPTCHA and access-control bypasses are outside the project scope.
   Repeated previews have separate budgets.
 - Private/local destinations and nonstandard ports are blocked during discovery
   and acquisition. Sites requiring unsupported browser networking may not work.
+- Discovery suppresses empty-profile Google account lookup, speculative search
+  connections and server-assisted autofill. This is not a Google-domain blocker:
+  websites can still request Google resources, and account cookies can permit
+  account-service calls. See the [browser policy and verification limits](docs/browser-network-policy.md).
 - Hard crashes can leave temporary files and logs. Do not delete working files
   while an operation is active. There is no automatic updater.
 
