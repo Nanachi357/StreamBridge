@@ -33,6 +33,8 @@ button to stop the server; closing the UI tab does not stop it. If an older sour
 launcher is running, finish it first, otherwise this launcher reuses that server.
 
 Finished videos default to the Windows Downloads known folder, including relocation.
+This path is read directly from Windows through JNA, without launching PowerShell.
+An unavailable known folder is reported rather than replaced with a guessed path.
 Choose folder in the UI saves the destination across launches in
 %LOCALAPPDATA%/StreamBridge/output.properties, outside this application folder.
 If the saved destination is unavailable, the UI warns and uses Downloads without
@@ -84,5 +86,7 @@ only the EXE, and do not mix libraries/runtime from different builds. Downloads
 and per-user settings are outside this image. This pilot has no auto-updater.
 
 License: see LICENSE. Third-party notices remain in the library JAR files and the
-runtime/legal directory. Public distribution still requires dependency/license
-review, signing decisions and acceptance testing on a clean supported Windows PC.
+runtime/legal directory. JNA notices are also under licenses/jna; the unmodified
+JNA libraries are used under their Apache-2.0 option. Public distribution still
+requires dependency/license review, signing decisions and acceptance testing on
+a clean supported Windows PC.

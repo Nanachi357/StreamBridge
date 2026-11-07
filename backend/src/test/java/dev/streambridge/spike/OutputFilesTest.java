@@ -62,9 +62,16 @@ class OutputFilesTest {
         assertThrows(java.io.IOException.class, () -> OutputFiles.publish(source, root, () -> true));
         try (var paths = Files.list(root)) { assertEquals(java.util.List.of(source), paths.toList()); }
     }
-    @Test void windowsDownloadsLookupReturnsAPathNotPowerShellDiagnostics() throws Exception {
+    @Test void windowsDownloadsLookupDoesNotLaunchPowerShellOrAnyHelperProcess() throws Exception {
         org.junit.jupiter.api.Assumptions.assumeTrue(System.getProperty("os.name").startsWith("Windows"));
-        Path downloads = OutputFiles.downloads();
-        assertTrue(downloads.isAbsolute()); assertTrue(Files.isDirectory(downloads));
+        // Deterministic regression: the old implementation fails even if PowerShell
+        // happens to start quickly on this machine. Do not rely on a timing assertion.
+        try (var processes = org.mockito.Mockito.mockConstruction(ProcessBuilder.class,
+                (process, context) -> { throw new AssertionError("Downloads must not spawn a helper"); })) {
+            Path downloads = OutputFiles.downloads();
+            assertTrue(downloads.isAbsolute()); assertTrue(Files.isDirectory(downloads));
+            for (int i = 0; i < 20; i++) assertEquals(downloads, OutputFiles.downloads());
+            assertTrue(processes.constructed().isEmpty());
+        }
     }
 }

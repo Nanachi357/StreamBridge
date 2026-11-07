@@ -1,10 +1,7 @@
 package dev.streambridge.spike;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.util.Base64;
-import java.util.concurrent.TimeUnit;
 import javax.swing.*;
 
 /** User-selected destination, separate from owned staging; never overwrites existing videos. */
@@ -21,22 +18,7 @@ final class OutputFiles {
     static Path downloads() throws Exception {
         if (!System.getProperty("os.name").startsWith("Windows"))
             return Files.createDirectories(Path.of(System.getProperty("user.home"), "Downloads")).toRealPath();
-        // Windows' Downloads known-folder registry value, including user relocation and environment expansion.
-        // Fixed script: no path, URL or UI input is interpolated as executable code.
-        String script = "$ProgressPreference='SilentlyContinue'; [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false); "
-                + "$k=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders'); "
-                + "try { $p=$k.GetValue('{374DE290-123F-4565-9164-39C4925E467B}'); if (!$p) { exit 2 }; [Console]::Write($p) } finally { $k.Dispose() }";
-        String encoded = Base64.getEncoder().encodeToString(script.getBytes(StandardCharsets.UTF_16LE));
-        Path powershell = Path.of(System.getenv("SystemRoot"), "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
-        var process = new ProcessBuilder(powershell.toString(), "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden",
-                "-OutputFormat", "Text", "-EncodedCommand", encoded).redirectError(ProcessBuilder.Redirect.DISCARD).start();
-        try {
-            process.getOutputStream().close();
-            if (!process.waitFor(8, TimeUnit.SECONDS)) throw new IOException("DOWNLOADS_LOOKUP_TIMEOUT");
-            byte[] data = process.getInputStream().readNBytes(32769);
-            if (process.exitValue() != 0 || data.length > 32768) throw new IOException("DOWNLOADS_LOOKUP_FAILED");
-            return checkedDirectory(Path.of(new String(data, StandardCharsets.UTF_8).strip()));
-        } finally { if (process.isAlive()) FfmpegTransfer.terminate(process); }
+        return checkedDirectory(WindowsDownloads.path());
     }
     static Path workRoot() throws IOException {
         Path base = System.getenv("LOCALAPPDATA") == null ? Path.of(System.getProperty("java.io.tmpdir"))

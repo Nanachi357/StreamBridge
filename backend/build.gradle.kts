@@ -15,6 +15,7 @@ version = "0.1.0-SNAPSHOT"
 // Keep the Jackson 3.1 family aligned, including security fixes after Boot's BOM.
 extra["jackson-bom.version"] = "3.1.8"
 val playwrightVersion = "1.64.0"
+val jnaVersion = "5.19.1"
 val packagedJavaVersion = "21.0.13+9"
 
 // The runtime is the pilot source set below, not an empty Spring Boot application.
@@ -38,6 +39,8 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("com.microsoft.playwright:playwright:$playwrightVersion")
+    testImplementation("net.java.dev.jna:jna-platform:$jnaVersion")
+    testImplementation("net.java.dev.jna:jna:$jnaVersion")
     // Pin the HTTP client/core pair used by the bounded, DNS-pinned acquisition spike.
     testImplementation("org.apache.httpcomponents.client5:httpclient5:5.6.5")
     testImplementation("org.apache.httpcomponents.core5:httpcore5:5.4.4")
@@ -172,6 +175,8 @@ val pilot = sourceSets.create("pilot") {
 }
 dependencies {
     add(pilot.implementationConfigurationName, "com.microsoft.playwright:playwright:$playwrightVersion")
+    add(pilot.implementationConfigurationName, "net.java.dev.jna:jna-platform:$jnaVersion")
+    add(pilot.implementationConfigurationName, "net.java.dev.jna:jna:$jnaVersion")
     add(pilot.implementationConfigurationName, "org.apache.httpcomponents.client5:httpclient5:5.6.5")
     add(pilot.implementationConfigurationName, "org.apache.httpcomponents.core5:httpcore5:5.4.4")
     add(pilot.implementationConfigurationName, "org.apache.httpcomponents.core5:httpcore5-h2:5.4.4")
@@ -208,6 +213,18 @@ val verifyPilotJar = tasks.register("verifyPilotJar") {
             check(libraries.none { it.contains("junit") || it.contains("mockito") || it.contains("spring-test") }) {
                 "Test dependencies must not be shipped"
             }
+            // Downloads lookup must also work in the packaged Windows runtime.
+            for ((library, entry) in mapOf(
+                "jna-$jnaVersion.jar" to "com/sun/jna/win32-x86-64/jnidispatch.dll",
+                "jna-platform-$jnaVersion.jar" to "com/sun/jna/platform/win32/Shell32.class"
+            )) {
+                val file = pilotLibraries.get().files.single { it.name == library }
+                JarFile(file).use { dependency ->
+                    for (required in listOf(entry, "META-INF/LICENSE", "META-INF/AL2.0")) {
+                        check(dependency.getJarEntry(required) != null) { "Missing $required in $library" }
+                    }
+                }
+            }
         }
     }
 }
@@ -223,6 +240,12 @@ val stagePilot = tasks.register<Sync>("stagePilot") {
     from(rootProject.file("../docs/third-party.md"))
     from("packaging/README.txt")
     from("packaging/tools.example.properties")
+    from("packaging/jna-NOTICES.txt") { into("licenses/jna") }
+    from({ zipTree(pilotLibraries.get().files.single { it.name == "jna-$jnaVersion.jar" }) }) {
+        include("META-INF/LICENSE", "META-INF/AL2.0")
+        eachFile { path = "licenses/jna/$name" }
+        includeEmptyDirs = false
+    }
     if (bundledChromium.isPresent) {
         from("packaging/bundled-browser.required")
         from(bundledChromium) {
@@ -243,6 +266,9 @@ val stagePilot = tasks.register<Sync>("stagePilot") {
         }
     }
     doLast {
+        for (notice in listOf("LICENSE", "AL2.0", "jna-NOTICES.txt")) {
+            check(destinationDir.resolve("licenses/jna/$notice").isFile) { "Missing JNA notice: $notice" }
+        }
         check(destinationDir.walkTopDown().none { it.isFile && it.name.equals("d3dcompiler_47.dll", true) }) {
             "Windows system d3dcompiler_47.dll must not be redistributed."
         }
