@@ -38,6 +38,12 @@ This policy avoids shipping that one Microsoft binary; it does not resolve the
 separate `dxcompiler.dll`, Chromium/ANGLE, embedded FFmpeg, or other third-party
 obligations. The optional mechanism is for private validation until the complete
 native payload and corresponding materials have passed redistribution review.
+The exact candidate, collected evidence and remaining release gates are recorded
+in [Browser distribution candidate](browser-distribution.md). In particular,
+DXC has separate open-source notices; excluding the SDK DLL does not settle
+statically linked Microsoft runtime or embedded LGPL/MPL obligations.
+The [Hibbiki material review](browser/hibbiki-materials.md) tracks the remaining
+runtime/source requirements separately from the verified payload inventory.
 
 An owned [FFmpeg build recipe](../native/ffmpeg/README.md) now targets FFmpeg 9.0.2
 for Windows x64, shared libraries, LGPL-2.1-or-later configuration and no external
