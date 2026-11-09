@@ -1,0 +1,262 @@
+{
+  "schema_version": 1,
+  "status": "prepared-inputs-not-complete-relink-kit",
+  "reviewed_on": "2026-11-09",
+  "candidate_version": "157.0.8103.39",
+  "chromium_revision": "9a31f0acec1854d44e49a73fbf8017598151a583",
+  "archive_inventory_check": {
+    "root_deps_entries": 430,
+    "active_windows_default_entries": 192,
+    "unresolved_conditions": 0,
+    "active_paths_without_regular_files": 36,
+    "scope": "Root Windows-x64 presence before overlays, corrected recursive string conditions and explicit CPU built-ins; not generated target closure or full Git-revision verification."
+  },
+  "source_overlays": [
+    {
+      "repository": "microsoft/DirectX-Headers",
+      "revision": "07b94cba474be6cdfd934febdbd0b21ca0524187",
+      "destination": "third_party/microsoft_dxheaders/src",
+      "url": "https://codeload.github.com/microsoft/DirectX-Headers/tar.gz/07b94cba474be6cdfd934febdbd0b21ca0524187",
+      "archive": "DirectX-Headers-07b94cba474be6cdfd934febdbd0b21ca0524187.tar.gz",
+      "bytes": 513315,
+      "sha256": "27a614264672a7ee0809675470c0c7609cf6bb58c7fa6c211050656f9354a320",
+      "license": "MIT",
+      "license_url": "https://github.com/microsoft/DirectX-Headers/blob/07b94cba474be6cdfd934febdbd0b21ca0524187/LICENSE",
+      "regular_files": 81,
+      "git_blob_verification": "all files match untruncated pinned Git tree; no gitlinks"
+    },
+    {
+      "repository": "microsoft/multimedia-redirection",
+      "revision": "8b1d8893d126547309f1bab8d8232418aa7c7109",
+      "destination": "third_party/microsoft_multimedia_redirection/src",
+      "url": "https://codeload.github.com/microsoft/multimedia-redirection/tar.gz/8b1d8893d126547309f1bab8d8232418aa7c7109",
+      "archive": "multimedia-redirection-8b1d8893d126547309f1bab8d8232418aa7c7109.tar.gz",
+      "bytes": 30998,
+      "sha256": "62839e3c3796b20581403b9895e744997074d71ceb5dd589bea27b476944650b",
+      "license": "MIT",
+      "license_url": "https://github.com/microsoft/multimedia-redirection/blob/8b1d8893d126547309f1bab8d8232418aa7c7109/LICENSE",
+      "regular_files": 15,
+      "git_blob_verification": "all files match untruncated pinned Git tree; no gitlinks"
+    },
+    {
+      "repository": "microsoft/webauthn",
+      "revision": "ef82c157125a0490e05f6ea82a7adb1b8e1bad08",
+      "destination": "third_party/microsoft_webauthn/src",
+      "url": "https://codeload.github.com/microsoft/webauthn/tar.gz/ef82c157125a0490e05f6ea82a7adb1b8e1bad08",
+      "archive": "webauthn-ef82c157125a0490e05f6ea82a7adb1b8e1bad08.tar.gz",
+      "bytes": 19884,
+      "sha256": "30d68f0da7a75e787a5a2b8436668c4e00e7648ac56231304f85bd5611eca28c",
+      "license": "MIT",
+      "license_url": "https://github.com/microsoft/webauthn/blob/ef82c157125a0490e05f6ea82a7adb1b8e1bad08/LICENSE",
+      "regular_files": 8,
+      "git_blob_verification": "all files match untruncated pinned Git tree; no gitlinks"
+    }
+  ],
+  "retrieved_tools": [
+    {
+      "package": "gn/gn/windows-amd64",
+      "version": "git_revision:0035961837fbcfe875d855744b3eda4fd2eefb43",
+      "sha256": "744df1d7654c5f54b279adca69dfb2cc617c53c40a055a6a6633f2dbd000b124",
+      "bytes": 1264069,
+      "executed": false,
+      "redistribution_approved": false,
+      "repository": "https://chrome-infra-packages.appspot.com",
+      "verification": "CIPD resolved SHA256 equals downloaded ZIP; ZIP integrity passes"
+    },
+    {
+      "package": "infra/3pp/tools/ninja/windows-amd64",
+      "version": "version:3@1.12.1.chromium.4",
+      "sha256": "0cf1cb1b9d2b8d2d14a9fd38b984f17dd853115db682880b21ceee45e91deb50",
+      "bytes": 318551,
+      "executed": false,
+      "redistribution_approved": false,
+      "repository": "https://chrome-infra-packages.appspot.com",
+      "verification": "CIPD resolved SHA256 equals downloaded ZIP; ZIP integrity passes"
+    },
+    {
+      "package": "build/siso/windows-amd64",
+      "version": "git_revision:b521b230cb7c56c821235e498285cf8e548a73ee",
+      "sha256": "4f369286660055f0a40acf57a6c89b4e14c2dea31708aa5aa94ae36c355e7cd5",
+      "bytes": 31873324,
+      "executed": false,
+      "redistribution_approved": false,
+      "repository": "https://chrome-infra-packages.appspot.com",
+      "verification": "CIPD resolved SHA256 equals downloaded ZIP; ZIP integrity passes"
+    },
+    {
+      "package": "chromium/third_party/typescript/windows-amd64",
+      "version": "version:2@7.0.2",
+      "sha256": "e300d84b417869ffed75a0fe13976d739b1ca4abd0faddf8f5c0b4e4aaa9c92a",
+      "bytes": 10214076,
+      "executed": false,
+      "redistribution_approved": false,
+      "verification": "CIPD SHA256 equals downloaded ZIP; ZIP integrity passes; LICENSE and NOTICE retained."
+    },
+    {
+      "name": "clang-llvmorg-24-init-7747-g62397f8b-67.tar.xz",
+      "source_url": "https://storage.googleapis.com/chromium-browser-clang/Win/clang-llvmorg-24-init-7747-g62397f8b-67.tar.xz",
+      "generation": 1791353603126632,
+      "sha256": "194d833174c9ab6ea1d5e5f9902fcc946a4b713c5ef573e112dfc48450c849e4",
+      "bytes": 51825724,
+      "executed": false,
+      "redistribution_approved": false,
+      "verification": "Complete bytes equal pinned DEPS SHA256 and size; no executable run."
+    },
+    {
+      "name": "rust-toolchain-1edd55dcfcd573872c727fa3e086369a71661ee0-1125-llvmorg-24-init-7747-g62397f8b.tar.xz",
+      "source_url": "https://storage.googleapis.com/chromium-browser-clang/Win/rust-toolchain-1edd55dcfcd573872c727fa3e086369a71661ee0-1125-llvmorg-24-init-7747-g62397f8b.tar.xz",
+      "generation": 1791299101162989,
+      "sha256": "d921778843d10fee506621af6457b0011da63ad6882e2508c91509a92c0cae49",
+      "bytes": 425602544,
+      "executed": false,
+      "redistribution_approved": false,
+      "verification": "Complete bytes equal pinned DEPS SHA256 and size; no executable run."
+    },
+    {
+      "name": "rust-libclang-1edd55dcfcd573872c727fa3e086369a71661ee0-1125-llvmorg-24-init-7747-g62397f8b.tar.xz",
+      "source_url": "https://storage.googleapis.com/chromium-browser-clang/Win/rust-libclang-1edd55dcfcd573872c727fa3e086369a71661ee0-1125-llvmorg-24-init-7747-g62397f8b.tar.xz",
+      "generation": 1791299103066753,
+      "sha256": "1f498ea146d1b441fb46d2bb420dfbb81c0d9d4eb3662e3c3ae072674412f9f7",
+      "bytes": 21526692,
+      "executed": false,
+      "redistribution_approved": false,
+      "verification": "Complete bytes equal pinned DEPS SHA256 and size; no executable run."
+    },
+    {
+      "name": "node-windows.input",
+      "source_url": "https://storage.googleapis.com/chromium-nodejs/2f710ced2db2beb7c3debf6097196c35ee5adb74",
+      "generation": 1767604839180114,
+      "sha256": "2ffe3acc0458fdde999f50d11809bbe7c9b7ef204dcf17094e325d26ace101d8",
+      "bytes": 89935872,
+      "executed": false,
+      "redistribution_approved": false,
+      "verification": "Complete bytes equal pinned DEPS SHA256 and size; no executable run."
+    }
+  ],
+  "limitations": [
+    "Not a delivered or complete LGPL/MPL source kit.",
+    "No compiler/build tool execution, Chromium compilation or relink validation.",
+    "Microsoft CRT authorization and recipient terms are not approved.",
+    "Tool archive identity verified; redistribution of those archives is not approved by this index."
+  ],
+  "nested_inventory_check": {
+    "entries": 706,
+    "active": 23,
+    "unresolved_conditions": 0,
+    "active_paths_without_regular_files": 7,
+    "lists": [
+      {
+        "path": "src/third_party/angle",
+        "entries": 523,
+        "active": 3,
+        "unresolved": 0,
+        "recursedeps": [
+          {
+            "path": "src/third_party/angle/buildtools",
+            "active": false
+          },
+          {
+            "path": "src/third_party/angle/third_party/jsoncpp",
+            "active": false
+          },
+          {
+            "path": "src/third_party/angle/third_party/dawn",
+            "active": false
+          }
+        ]
+      },
+      {
+        "path": "src/third_party/dawn",
+        "entries": 107,
+        "active": 10,
+        "unresolved": 0,
+        "recursedeps": [
+          {
+            "path": "src/third_party/dawn/buildtools",
+            "active": false
+          }
+        ]
+      },
+      {
+        "path": "src/third_party/openscreen/src",
+        "entries": 32,
+        "active": 5,
+        "unresolved": 0,
+        "recursedeps": [
+          {
+            "path": "src/third_party/openscreen/src/build",
+            "active": false
+          },
+          {
+            "path": "src/third_party/openscreen/src/buildtools",
+            "active": true
+          },
+          {
+            "path": "src/third_party/openscreen/src/third_party/instrumented_libs",
+            "active": false
+          }
+        ]
+      },
+      {
+        "path": "src/third_party/devtools-frontend/src",
+        "entries": 30,
+        "active": 1,
+        "unresolved": 0,
+        "recursedeps": [
+          {
+            "path": "src/third_party/devtools-frontend/src/build",
+            "active": false
+          },
+          {
+            "path": "src/third_party/devtools-frontend/src/buildtools",
+            "active": false
+          }
+        ]
+      },
+      {
+        "path": "src/third_party/webpagereplay",
+        "entries": 10,
+        "active": 3,
+        "unresolved": 0,
+        "recursedeps": []
+      },
+      {
+        "path": "src/third_party/openscreen/src/buildtools",
+        "entries": 4,
+        "active": 1,
+        "unresolved": 0,
+        "recursedeps": []
+      }
+    ],
+    "scope": "Pinned DEPS conditions/presence; seven missing declarations are not seven proven runtime-target requirements."
+  },
+  "pgo": {
+    "name": "win64.pgo.stored.gz",
+    "url": "https://storage.googleapis.com/chromium-optimization-profiles/pgo_profiles/chrome-win64-8103-1793080301-3b8dfd0e6aad7e474413def980f0fb6855e461fe-f8bedb34bb99428458814a3ff45c424606ddc145.profdata",
+    "generation": "1793083922288618",
+    "bytes": 111311073,
+    "expected_md5": "KG3JyWbuGu+O2X64BBU/Lg==",
+    "executed": false,
+    "redistribution_approved": false,
+    "status": "downloaded-and-hash-verified",
+    "sha256": "c20dae171845878ad73f17711140e9dd0de07318c5855db8cd9988eb767a1a16",
+    "decoded_sha256": "42685ab2206d12b2890b09b9ba1f1b20e94a460d5ec47cc8072030e4b85f25da",
+    "decoded_bytes": 514785664,
+    "decoded_file": "chrome-win64-8103-1793080301-3b8dfd0e6aad7e474413def980f0fb6855e461fe-f8bedb34bb99428458814a3ff45c424606ddc145.profdata",
+    "verification": "Stored bytes match GCS MD5; decoded gzip CRC verified; local SHA256 pins recorded. No upstream SHA256 attestation."
+  },
+  "bootstrap": {
+    "depot_tools_revision": "96b9c092c0cdaa9f1ec87b0af777ec85977dee91",
+    "python_package": "infra/3pp/tools/cpython3/windows-amd64",
+    "python_version": "version:2@3.11.8.chromium.35",
+    "cipd_client_version": "git_revision:7a04966073ee0fee4501e766b6200e98faae91b1",
+    "cipd_client_windows_amd64_sha256": "453cc58cc06b84f0d6566c112b8e86a4784db391388dd1870065c55e8c369ebf",
+    "status": "Pinned manifests/lockfiles retained; bootstrap binaries, wheels and module closure not collected or executed."
+  },
+  "uncollected_inputs": [
+    "Go modules if required by selected targets",
+    "Perl a2bd4470d3485e6eda532eee416a71d16db2d7ba complete distribution",
+    "bootstrap tools and Python wheels",
+    "remaining runtime-target and resource closure"
+  ]
+}
