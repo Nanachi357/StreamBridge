@@ -69,6 +69,11 @@ jobs:
         run: |
           ./native/ffmpeg/Test-SourceDownload.ps1
           ./native/ffmpeg/Test-OutputDirectory.ps1
+      - name: Test installer file inventory validation
+        run: |
+          ./scripts/Test-FileInventory.ps1
+          powershell.exe -NoProfile -File ./scripts/Test-FileInventory.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Install pinned media tools for owned fixtures
         run: |
           $ErrorActionPreference = 'Stop'

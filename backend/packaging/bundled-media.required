@@ -1,0 +1,1 @@
+This package requires its adjacent native/ffmpeg runtime. Never fall back to external tools.

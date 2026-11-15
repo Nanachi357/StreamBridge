@@ -231,6 +231,9 @@ val verifyPilotJar = tasks.register("verifyPilotJar") {
 tasks.named("check") { dependsOn(verifyPilotJar) }
 // Optional, explicitly supplied unpacked browser. No automatic native downloads or license acceptance.
 val bundledChromium = providers.gradleProperty("bundledChromiumDirectory")
+val bundledMedia = providers.gradleProperty("bundledMediaDirectory")
+val mediaFiles = setOf("ffmpeg.exe", "ffprobe.exe", "avcodec-63.dll", "avfilter-12.dll",
+    "avformat-63.dll", "avutil-61.dll", "swresample-7.dll", "swscale-10.dll")
 val stagePilot = tasks.register<Sync>("stagePilot") {
     dependsOn(verifyPilotJar)
     into(layout.buildDirectory.dir("pilot-input"))
@@ -241,6 +244,10 @@ val stagePilot = tasks.register<Sync>("stagePilot") {
     from("packaging/README.txt")
     from("packaging/tools.example.properties")
     from("packaging/jna-NOTICES.txt") { into("licenses/jna") }
+    if (bundledMedia.isPresent) {
+        from("packaging/bundled-media.required")
+        from(bundledMedia) { into("native/ffmpeg") }
+    }
     from({ zipTree(pilotLibraries.get().files.single { it.name == "jna-$jnaVersion.jar" }) }) {
         include("META-INF/LICENSE", "META-INF/AL2.0")
         eachFile { path = "licenses/jna/$name" }
@@ -254,6 +261,13 @@ val stagePilot = tasks.register<Sync>("stagePilot") {
         }
     }
     doFirst {
+        if (bundledMedia.isPresent) {
+            val source = file(bundledMedia.get())
+            check(Path.of(bundledMedia.get()).isAbsolute && source.isDirectory) { "Supply an absolute FFmpeg runtime directory." }
+            check(source.listFiles()!!.map { it.name }.toSet() == mediaFiles && source.listFiles()!!.all { it.isFile }) {
+                "FFmpeg runtime must contain exactly the eight reviewed files."
+            }
+        }
         if (bundledChromium.isPresent) {
             val source = file(bundledChromium.get())
             check(Path.of(bundledChromium.get()).isAbsolute && source.resolve("chrome.exe").isFile) { "Supply an absolute unpacked Chromium directory containing chrome.exe." }

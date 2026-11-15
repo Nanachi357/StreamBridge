@@ -12,6 +12,26 @@ final class LauncherSettings {
         return Path.of(System.getenv("LOCALAPPDATA"), "StreamBridge", "pilot-launcher", "tools.properties");
     }
     static Map<String,String> environment(Path file, Map<String,String> environment) throws IOException {
+        try {
+            Path location = Path.of(LauncherSettings.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            return environment(file, environment, location);
+        } catch (java.net.URISyntaxException failure) { throw new IOException(failure); }
+    }
+    static Map<String,String> environment(Path file, Map<String,String> environment, Path codeLocation) throws IOException {
+        // Installed tools belong to this JAR, never to the working directory or a developer profile.
+        if (Files.isRegularFile(codeLocation)) {
+            Path directory = codeLocation.getParent().resolve("native/ffmpeg");
+            if (Files.exists(codeLocation.getParent().resolve("bundled-media.required")) || Files.exists(directory)) {
+                for (String name : List.of("ffmpeg.exe", "ffprobe.exe", "avcodec-63.dll", "avfilter-12.dll",
+                        "avformat-63.dll", "avutil-61.dll", "swresample-7.dll", "swscale-10.dll")) {
+                    if (!Files.isRegularFile(directory.resolve(name)))
+                        throw new IOException("Комплект медіаінструментів StreamBridge пошкоджено: " + name
+                                + ". Перевстанови застосунок.");
+                }
+                return Map.of("STREAMBRIDGE_FFMPEG_DIR", directory.toAbsolutePath().toString(),
+                        "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1");
+            }
+        }
         var settings = new Properties();
         // exists() also returns false when access cannot be determined: do not hide read failures.
         try (Reader input = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {

@@ -163,7 +163,13 @@ case-insensitively, and the final image is checked for its absence. Other files
 are preserved. Nested archives are rejected because they could reintroduce it.
 This mechanism does **not** clear a browser build for public redistribution;
 matching sources, notices and remaining component licenses still require review.
-FFmpeg/FFprobe remain external at this stage.
+FFmpeg/FFprobe remain external with this developer command.
+
+A separate [private installer workflow](docs/private-installer.md) validates the
+reviewed native inputs and bundles Java, Chromium and the owned FFmpeg runtime in
+a per-user EXE installer. It verifies the actual embedded MSI payload and needs
+no personal tool configuration at runtime. This is for local clean-Windows testing
+only; public redistribution/material requirements and VM acceptance remain open.
 
 On Windows, startup verifies the system `System32/d3dcompiler_47.dll` in a bounded,
 hidden Windows PowerShell process: Authenticode signature, native loading and a

@@ -1,0 +1,23 @@
+StreamBridge private installer test — NOT A PUBLIC RELEASE
+
+This test includes private Java, Chromium and FFmpeg runtimes. No separate Java,
+Gradle, Node.js, FFmpeg or tools.properties setup is needed. The default web browser
+opens the local UI; the bundled Chromium is used for discovery.
+
+Installed native tools take precedence over developer environment/settings.
+Missing bundled components cause startup failure, never external-tool fallback.
+Install for the current user. Start from the Start Menu or desktop shortcut.
+Uninstall through Windows Settings > Apps. Completed videos, preferences and
+diagnostic files in the user profile are not installation files and are retained.
+Never store your videos in the installation directory.
+
+This is an unsigned, private test package. Do not redistribute or publish it.
+Browser source/relink materials and runtime distribution conditions remain open.
+Included notices are retained but do not constitute completed license clearance.
+The StreamBridge LICENSE applies to StreamBridge code, not third-party components.
+Java notices are under runtime/legal; other notices are in app/licenses and the
+bundled browser files. Matching FFmpeg sources/development materials are retained
+with the private build inputs, outside the installed application.
+
+Clean Windows installation, standard-user behavior, uninstall/reinstall and final
+payload acceptance must still be tested. This file is not an acceptance report.

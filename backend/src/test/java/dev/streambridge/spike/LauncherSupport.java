@@ -77,12 +77,10 @@ final class LauncherSupport {
             try {
                 ProcessBuilder builder = LauncherSettings.childJava(LauncherDependencyProbe.class, run.resolve("probe.log").toString());
                 for (String key : List.of("STREAMBRIDGE_FFMPEG_DIR", "PLAYWRIGHT_BROWSERS_PATH")) {
-                    String inherited = System.getenv(key);
                     String value = builder.environment().get(key);
-                    String source = inherited != null && !inherited.isBlank() ? "environment"
-                            : value != null ? "tools.properties" : "not configured (tool default if supported)";
-                    log.println(key + " source=" + source + " resolved=" + value);
+                    log.println(key + " childEnvironment=" + value);
                 }
+                log.println("packagedToolsTakePrecedence=true");
                 log.println("childJava=" + builder.command().getFirst());
                 Process process = builder.redirectError(run.resolve("child-stderr.log").toFile()).start();
                 log.println("childPid=" + process.pid());
@@ -111,9 +109,9 @@ final class LauncherSupport {
 
     static String probeFailure(int exit) {
         return switch (exit) {
-            case 21 -> "Не вдалося запустити FFmpeg. Перевір mediaToolsDirectory у " + LauncherSettings.file();
-            case 22 -> "Не вдалося запустити FFprobe. Перевір mediaToolsDirectory у " + LauncherSettings.file();
-            case 23 -> "Не вдалося запустити або перевірити Chromium з обов’язковою пісочницею. Захист не вимикався. Перевір chromiumDirectory у " + LauncherSettings.file();
+            case 21 -> "Не вдалося запустити FFmpeg. Для встановленого комплекту перевстанови StreamBridge; для зовнішніх інструментів перевір mediaToolsDirectory у " + LauncherSettings.file();
+            case 22 -> "Не вдалося запустити FFprobe. Для встановленого комплекту перевстанови StreamBridge; для зовнішніх інструментів перевір mediaToolsDirectory у " + LauncherSettings.file();
+            case 23 -> "Не вдалося запустити або перевірити Chromium з обов’язковою пісочницею. Захист не вимикався. Для встановленого комплекту перевстанови StreamBridge; для зовнішнього браузера перевір chromiumDirectory у " + LauncherSettings.file();
             case 24 -> "Chromium не пройшов перевірку мережевої ізоляції WebRTC. Запуск зупинено; захист не вимикався.";
             case 25 -> "У Windows відсутня системна d3dcompiler_47.dll (System32). Онови або віднови компоненти Windows офіційними засобами Microsoft. Не завантажуй окремі DLL зі сторонніх сайтів.";
             case 26 -> "Системна d3dcompiler_47.dll не пройшла перевірку підпису або працездатності. Онови або віднови компоненти Windows офіційними засобами Microsoft. Деталі — у журналі діагностики.";
