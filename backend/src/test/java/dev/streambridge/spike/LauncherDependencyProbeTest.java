@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LauncherDependencyProbeTest {
@@ -40,12 +41,19 @@ class LauncherDependencyProbeTest {
     }
     @Test void timeoutIsDistinctAndOwnedChildIsStopped() {
         var result = new StringWriter();
-        assertThrows(IOException.class, () -> LauncherDependencyProbe.runCommand(
+        assertThrows(TimeoutException.class, () -> LauncherDependencyProbe.runCommand(
                 command("sleep"), Duration.ofMillis(500), new PrintWriter(result, true)));
         assertTrue(result.toString().contains("outcome=TIMEOUT"));
         long pid = result.toString().lines().filter(line -> line.startsWith("pid="))
                 .mapToLong(line -> Long.parseLong(line.substring(4))).findFirst().orElseThrow();
         assertFalse(ProcessHandle.of(pid).map(ProcessHandle::isAlive).orElse(false));
+    }
+    @Test void coldToolCanFinishAfterTheFormerTenSecondLimit() throws Exception {
+        var result = new StringWriter();
+        LauncherDependencyProbe.runCommand(command("cold"), StartupTimeouts.MEDIA, new PrintWriter(result, true));
+        assertTrue(result.toString().contains("exitCode=0"));
+        assertTrue(result.toString().contains("ready after cold start"));
+        assertTrue(result.toString().contains("processStartMs="));
     }
     @Test void startFailurePreservesOsException() {
         var result = new StringWriter();
@@ -64,6 +72,7 @@ class LauncherDependencyProbeTest {
                 }
                 case "fail" -> { System.err.println("fixture failure"); System.exit(17); }
                 case "sleep" -> Thread.sleep(30_000);
+                case "cold" -> { Thread.sleep(11_000); System.out.println("ready after cold start"); }
                 default -> throw new IllegalArgumentException();
             }
         }

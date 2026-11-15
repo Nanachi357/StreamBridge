@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /** Bounded child process: validates real executable startup without opening a site. */
 public final class LauncherDependencyProbe {
@@ -26,9 +27,12 @@ public final class LauncherDependencyProbe {
     }
 
     private static int run(PrintWriter log) {
+        long started = System.nanoTime();
         log.println("javaHome=" + System.getProperty("java.home"));
         log.println("workingDirectory=" + Path.of("").toAbsolutePath());
+        stage(log, started, "system-library-start");
         int systemLibrary = WindowsSystemLibrary.verify(log);
+        stage(log, started, "system-library-finished");
         if (systemLibrary != 0) return systemLibrary;
         for (String tool : new String[]{"ffmpeg", "ffprobe"}) {
             try {
@@ -38,32 +42,49 @@ public final class LauncherDependencyProbe {
                 Path executable = Path.of(directory, tool + ".exe");
                 log.println("executable=" + executable + " regularFile=" + Files.isRegularFile(executable));
                 if (!Files.isRegularFile(executable)) throw new FileNotFoundException(executable.toString());
-                runCommand(List.of(executable.toString(), "-version"), Duration.ofSeconds(10), log);
+                runCommand(List.of(executable.toString(), "-version"), StartupTimeouts.MEDIA, log);
+            } catch (TimeoutException failure) {
+                failure.printStackTrace(log); log.flush();
+                return tool.equals("ffmpeg") ? 28 : 29;
             } catch (Exception failure) {
                 failure.printStackTrace(log); log.flush();
                 return tool.equals("ffmpeg") ? 21 : 22;
             }
         }
         log.println("chromiumCache=" + System.getenv("PLAYWRIGHT_BROWSERS_PATH"));
+        stage(log, started, "playwright-driver-start");
         try (var network = new BrowserNetworkProxy();
-             var playwright = Playwright.create(new Playwright.CreateOptions().setEnv(Map.of("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1")));
-             var browser = ChromiumLaunch.launch(playwright.chromium(), true, network);
-             var context = browser.newContext()) {
-            log.println("chromiumExecutable=" + ChromiumLaunch.executablePath(playwright.chromium()));
-            log.println("chromiumSandboxRequested=true");
-            log.println("browserNetworkGateway=public-only-socks5");
-            var page = context.newPage(); page.setContent("<title>StreamBridge startup check</title>");
-            if (!page.title().equals("StreamBridge startup check")) throw new IllegalStateException();
-            try {
-                verifyNoDirectWebRtc(page);
-                log.println("browserWebRtcDirectReceiverCheck=OK");
-            } catch (Exception failure) {
-                failure.printStackTrace(log); log.flush(); return 24;
+             var playwright = Playwright.create(new Playwright.CreateOptions().setEnv(Map.of("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1")))) {
+            stage(log, started, "playwright-driver-ready-browser-start");
+            try (var browser = ChromiumLaunch.launch(playwright.chromium(), true, network);
+                 var context = browser.newContext()) {
+                stage(log, started, "browser-context-ready");
+                log.println("chromiumExecutable=" + ChromiumLaunch.executablePath(playwright.chromium()));
+                log.println("chromiumSandboxRequested=true");
+                log.println("browserNetworkGateway=public-only-socks5");
+                var page = context.newPage(); page.setContent("<title>StreamBridge startup check</title>");
+                if (!page.title().equals("StreamBridge startup check")) throw new IllegalStateException();
+                stage(log, started, "page-ready");
+                try {
+                    verifyNoDirectWebRtc(page);
+                    log.println("browserWebRtcDirectReceiverCheck=OK");
+                } catch (Exception failure) {
+                    failure.printStackTrace(log); log.flush(); return 24;
+                }
+                stage(log, started, "browser-check-finished");
             }
+        } catch (TimeoutError failure) {
+            failure.printStackTrace(log); log.flush(); return 30;
         } catch (Exception failure) {
             failure.printStackTrace(log); log.flush(); return 23;
         }
+        stage(log, started, "dependencies-ready");
         return 0;
+    }
+
+    private static void stage(PrintWriter log, long started, String name) {
+        log.println("stage=" + name + " elapsedMs=" + Duration.ofNanos(System.nanoTime() - started).toMillis());
+        log.flush();
     }
 
     /** Behavioral check of this installed binary, not merely the presence of a command-line flag. */
@@ -115,15 +136,17 @@ public final class LauncherDependencyProbe {
         log.println("command=" + command + " timeoutMs=" + timeout.toMillis());
         long started = System.nanoTime();
         Process process = new ProcessBuilder(command).start();
+        log.println("processStartMs=" + Duration.ofNanos(System.nanoTime() - started).toMillis());
         process.getOutputStream().close();
         log.println("pid=" + process.pid());
         var stdout = new FutureTask<String>(() -> outputPrefix(process.getInputStream()));
         var stderr = new FutureTask<String>(() -> outputPrefix(process.getErrorStream()));
         Thread.startVirtualThread(stdout); Thread.startVirtualThread(stderr);
         try {
-            if (!process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
+            long remaining = Math.max(0, timeout.toNanos() - (System.nanoTime() - started));
+            if (!process.waitFor(remaining, TimeUnit.NANOSECONDS)) {
                 log.println("outcome=TIMEOUT");
-                throw new IOException("Tool exceeded " + timeout.toMillis() + " ms");
+                throw new TimeoutException("Tool exceeded " + timeout.toMillis() + " ms including process creation");
             }
             int exit = process.exitValue();
             log.println("exitCode=" + exit + " exitHex=0x" + Integer.toHexString(exit));

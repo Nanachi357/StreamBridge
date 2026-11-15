@@ -133,7 +133,11 @@ jobs:
           $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $env:RUNNER_TEMP 'absent-browser-cache'
           $report = Join-Path $env:RUNNER_TEMP 'streambridge-self-check.json'
           $process = Start-Process -FilePath (Join-Path $image 'StreamBridge.exe') -ArgumentList ('--self-check="' + $report + '"') -WorkingDirectory $image -WindowStyle Hidden -PassThru
-          if (!$process.WaitForExit(60000)) { $process.Kill(); throw 'Package self-check timed out' }
+          # Allow the four-minute cold dependency check plus self-check/cleanup overhead.
+          if (!$process.WaitForExit(300000)) {
+            taskkill.exe /PID $process.Id /T /F
+            throw 'Package self-check timed out'
+          }
           $process.Refresh()
           if ($process.ExitCode -ne 0) { throw "Package self-check exit $($process.ExitCode)" }
           $result = Get-Content -LiteralPath $report -Raw | ConvertFrom-Json

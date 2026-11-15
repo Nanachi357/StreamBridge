@@ -40,7 +40,7 @@ class ChromiumLaunchTest {
             assertEquals(Boolean.TRUE, options.getValue().chromiumSandbox);
             assertEquals(headless, options.getValue().headless);
             assertEquals(executable, options.getValue().executablePath);
-            assertEquals(20_000.0, options.getValue().timeout);
+            assertEquals(60_000.0, options.getValue().timeout);
             assertEquals(ChromiumFeaturePolicy.arguments(), options.getValue().args);
             assertNull(options.getValue().ignoreAllDefaultArgs);
             assertNull(options.getValue().ignoreDefaultArgs);

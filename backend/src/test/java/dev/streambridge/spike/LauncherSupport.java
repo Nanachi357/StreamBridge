@@ -84,7 +84,7 @@ final class LauncherSupport {
                 log.println("childJava=" + builder.command().getFirst());
                 Process process = builder.redirectError(run.resolve("child-stderr.log").toFile()).start();
                 log.println("childPid=" + process.pid());
-                awaitProbe(process, log);
+                awaitProbe(process, log, StartupTimeouts.DEPENDENCIES);
                 log.println("result=OK");
             } catch (Exception failure) {
                 failure.printStackTrace(log);
@@ -93,12 +93,14 @@ final class LauncherSupport {
         }
     }
 
-    private static void awaitProbe(Process process, PrintWriter log) throws Exception {
-        if (!process.waitFor(60, TimeUnit.SECONDS)) {
+    static void awaitProbe(Process process, PrintWriter log, Duration timeout) throws Exception {
+        log.println("dependencyTimeoutMs=" + timeout.toMillis());
+        if (!process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
             var descendants = process.descendants().toList();
             descendants.forEach(ProcessHandle::destroyForcibly); process.destroyForcibly();
             process.waitFor(5, TimeUnit.SECONDS);
-            throw new IOException("Перевірка залежностей перевищила 60 секунд. Перевір Chromium і медіаінструменти.");
+            throw new IOException("Перевірка запуску не завершилася за " + timeout.toSeconds()
+                    + " с. Закрий зайві програми й повтори запуск. Це не підтверджує пошкодження комплекту; деталі — у журналі діагностики.");
         }
         log.println("childExit=" + process.exitValue());
         if (process.exitValue() != 0) throw new IOException(probeFailure(process.exitValue()));
@@ -116,6 +118,8 @@ final class LauncherSupport {
             case 25 -> "У Windows відсутня системна d3dcompiler_47.dll (System32). Онови або віднови компоненти Windows офіційними засобами Microsoft. Не завантажуй окремі DLL зі сторонніх сайтів.";
             case 26 -> "Системна d3dcompiler_47.dll не пройшла перевірку підпису або працездатності. Онови або віднови компоненти Windows офіційними засобами Microsoft. Деталі — у журналі діагностики.";
             case 27 -> "Не вдалося виконати перевірку системної d3dcompiler_47.dll. Це не обов’язково пошкодження файла: перевір доступність Windows PowerShell та обмеження політик. Деталі — у журналі діагностики.";
+            case 28, 29, 30 -> (exit == 28 ? "FFmpeg" : exit == 29 ? "FFprobe" : "Chromium")
+                    + " не завершив перевірку за відведений час. Перший запуск може бути повільнішим. Закрий зайві програми й повтори запуск; якщо помилка повториться, збережи діагностику. Таймаут не означає пошкодження файлів. Захист не вимикався.";
             default -> "Не вдалося запустити Chromium Playwright. Перевір chromiumDirectory у " + LauncherSettings.file();
         };
     }

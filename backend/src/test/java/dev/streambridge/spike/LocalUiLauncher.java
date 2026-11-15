@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class LocalUiLauncher {
     private final JFrame window = new JFrame("StreamBridge — запуск");
     private final JComboBox<String> browser = new JComboBox<>(new String[]{"За замовчуванням", "Google Chrome", "Microsoft Edge", "Інший .exe…"});
-    private final JLabel message = new JLabel("Перевіряємо Java, FFmpeg, FFprobe та Chromium…");
+    private final JLabel message = new JLabel("Перевіряємо компоненти… Перший запуск може тривати до 4 хвилин.");
     private final JButton open = new JButton("Відкрити UI"), copy = new JButton("Скопіювати посилання"), stop = new JButton("Завершити StreamBridge");
     private final CountDownLatch finished = new CountDownLatch(1);
     private final AtomicBoolean closing = new AtomicBoolean();
@@ -89,7 +89,7 @@ public final class LocalUiLauncher {
                 app = new LocalUiSpike(session); launchUrl = app.launchUrl();
                 if (!LauncherSupport.ready(launchUrl)) throw new IllegalStateException("Backend не підтвердив готовність.");
                 instance.publish(launchUrl);
-            } else launchUrl = instance.awaitExisting(Duration.ofSeconds(70));
+            } else launchUrl = instance.awaitExisting(StartupTimeouts.DEPENDENCIES.plusSeconds(10));
             SwingUtilities.invokeLater(() -> {
                 open.setEnabled(true); copy.setEnabled(true); stop.setEnabled(true);
                 if (!instance.owner()) stop.setText("Закрити це вікно запуску");

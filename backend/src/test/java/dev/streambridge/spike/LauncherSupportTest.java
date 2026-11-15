@@ -6,11 +6,61 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.*;
 import java.time.Duration;
+import java.io.*;
+import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LauncherSupportTest {
     @TempDir Path root;
     private static final String KEY = "a".repeat(72);
+    private static Process probe(String mode) throws IOException {
+        String java = System.getProperty("os.name").startsWith("Windows") ? "javaw.exe" : "java";
+        return new ProcessBuilder(List.of(Path.of(System.getProperty("java.home"), "bin", java).toString(),
+                "-cp", System.getProperty("java.class.path"), ProbeFixture.class.getName(), mode)).start();
+    }
+    @Test void dependencyBudgetLeavesTimeForDriverAndVerificationAfterNativeChecks() {
+        assertTrue(StartupTimeouts.DEPENDENCIES.compareTo(
+                StartupTimeouts.MEDIA.multipliedBy(2).plus(StartupTimeouts.BROWSER).plusSeconds(30)) > 0);
+    }
+    @Test void slowProbeStillRequiresSameRuntimeAcknowledgement() throws Exception {
+        try (var log = new PrintWriter(new StringWriter())) {
+            LauncherSupport.awaitProbe(probe("ready"), log, Duration.ofSeconds(10));
+            IOException failure = assertThrows(IOException.class,
+                    () -> LauncherSupport.awaitProbe(probe("wrong"), log, Duration.ofSeconds(10)));
+            assertTrue(failure.getMessage().contains("same Java runtime"));
+        }
+    }
+    @Test void globalDeadlineStopsProbeEvenBeforeItReportsAStage() throws Exception {
+        Process process = probe("hang");
+        try (var log = new PrintWriter(new StringWriter())) {
+            IOException failure = assertThrows(IOException.class,
+                    () -> LauncherSupport.awaitProbe(process, log, Duration.ofMillis(500)));
+            assertTrue(failure.getMessage().contains("Перевірка запуску не завершилася"));
+            assertFalse(process.isAlive());
+        } finally { process.destroyForcibly(); }
+    }
+    @Test void mediaAndBrowserTimeoutsDoNotRecommendReinstallation() throws Exception {
+        for (int code : new int[]{28,29,30}) {
+            Process process = probe(Integer.toString(code));
+            try (var log = new PrintWriter(new StringWriter())) {
+                IOException failure = assertThrows(IOException.class,
+                        () -> LauncherSupport.awaitProbe(process, log, Duration.ofSeconds(10)));
+                assertEquals(LauncherSupport.probeFailure(code), failure.getMessage());
+                assertTrue(failure.getMessage().contains("Таймаут не означає пошкодження"));
+                assertFalse(failure.getMessage().contains("перевстанови"));
+            }
+        }
+    }
+    public static final class ProbeFixture {
+        public static void main(String[] args) throws Exception {
+            switch (args[0]) {
+                case "ready" -> { Thread.sleep(250); System.out.println("JAVA_RUNTIME=" + System.getProperty("java.home")); }
+                case "wrong" -> System.out.println("wrong runtime");
+                case "hang" -> Thread.sleep(30_000);
+                default -> System.exit(Integer.parseInt(args[0]));
+            }
+        }
+    }
     @Test void onlyExactLoopbackLaunchAddressesAreAccepted() {
         assertEquals(12345, LauncherSupport.checkedLaunchUri("http://127.0.0.1:12345/#"+KEY).getPort());
         for (String url : new String[]{"https://example.org/#"+KEY,"http://localhost:12345/#"+KEY,

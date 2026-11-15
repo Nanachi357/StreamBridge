@@ -42,7 +42,7 @@ final class ChromiumLaunch {
                 .setChromiumSandbox(true)
                 .setHeadless(headless)
                 .setExecutablePath(executablePath(chromium))
-                .setTimeout(20_000);
+                .setTimeout(StartupTimeouts.BROWSER.toMillis());
         var args = new ArrayList<>(ChromiumFeaturePolicy.arguments());
         if (network != null) {
             options.setProxy(new Proxy(network.endpoint()).setBypass("<-loopback>"));

@@ -70,6 +70,14 @@ developer caches or personal configuration with the guest.
    Profile settings/diagnostics are deliberately retained by uninstall.
 
 Do not disable Defender or other OS protections to make the installer pass.
+Measure the **first** installed EXE launch before warming up FFmpeg or Chromium
+manually. A later successful retry is not a first-launch acceptance pass. Startup
+allows 60 seconds per media tool and 60 seconds for Chromium launch, inside a
+four-minute dependency-check limit (plus bounded termination). These are maximum
+waits, not mandatory delays. Logs record native process-creation time and driver,
+browser and page stages. Timeouts are reported separately from missing/broken tools;
+they do not by themselves establish corruption or an antivirus problem. Preserve
+the original failure logs when repeating tests after reinstall or checkpoint restore.
 The unsigned private package and any security prompts must be recorded accurately.
 Developer app-image self-check is useful before VM testing but is not clean-machine
 installation/uninstallation acceptance. Public notices/source delivery and browser
