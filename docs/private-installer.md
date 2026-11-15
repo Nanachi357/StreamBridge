@@ -82,3 +82,55 @@ The unsigned private package and any security prompts must be recorded accuratel
 Developer app-image self-check is useful before VM testing but is not clean-machine
 installation/uninstallation acceptance. Public notices/source delivery and browser
 redistribution gates remain separate from this private functionality test.
+
+## Verified candidate: 2026-11-13
+
+One private `0.1.0` candidate was exercised on Windows 11 Enterprise Evaluation
+26H2, build 26300.9974, in Hyper-V with four virtual CPUs and dynamic 4-8 GiB RAM.
+The standard test account had no developer tools on PATH or personal tool-path
+settings. The VM had SSH and test accounts configured; it was not an untouched
+OS image. The candidate used bundled Java, Chromium and FFmpeg. OS protections
+and application network restrictions were not disabled.
+
+| Scenario | Result and evidence scope |
+| --- | --- |
+| Clean-checkpoint install and first EXE self-check | Passed without manually warming up native tools; first self-check took about 100 seconds. |
+| Offline install and first EXE self-check | Passed, about 72 and 73 seconds respectively; VM internet blocked while local administration remained available. |
+| Windows reboot | First interactive-user self-check after reboot passed in about 21 seconds, still offline; saved preferences and an owned Downloads sentinel were unchanged. |
+| Uninstall and reinstall | Passed; executable and shortcuts removed/recreated; user data and settings retained. |
+| Installed payload | All 534 files matched the candidate's payload manifest. |
+| Media API flow | Real browser discovery found five qualities in the public hls.js/Mux Big Buck Bunny sample. Selected 320x184; preview 5.016 seconds, full video 634.633 seconds, H.264/AAC stereo. Both files decoded completely without errors. |
+| Preview quality check | Actual resolution matched the selection; first 20 compressed packets of each video/audio stream matched the full file. This was a bounded comparison, not an exhaustive original-frame comparison. |
+| Cancellation | Discovery and active segment transfer cancelled, workers stopped, partial media removed, earlier completed output unchanged. |
+| Close discovery window | Normal close produced `CANCELLED` with `DISCOVERY_PAGE_CLOSED`; another search succeeded in the same backend. |
+| Interrupt internet during transfer | Automatic `SEGMENTS_SELECTED_VARIANT_TIMEOUT` about six seconds after VM traffic was blocked; no cancellation command needed. Partials removed, internet restored, a fresh download succeeded in the same backend. |
+| Manual UI follow-up | The tester reported all supplied shortcut/UI, preview, folder selection, download/playback and application restart steps working, including folder persistence. This is user-reported evidence, separate from the automated API checks. |
+
+Console media tests used the installed JAR and bundled runtime through the
+existing `LocalUiSpike` entry point and the normal authenticated HTTP API. They
+did not substitute a fixture worker or automate desktop input. EXE startup was
+tested separately. Raw reports, hashes and logs are retained privately; they are
+not release attachments and may contain local paths or expired session keys.
+
+Two findings affect interpretation:
+
+- Direct SSH execution returned `NotSigned` for the Windows system DLL, while
+  an interactive standard-user task returned `Valid` with a catalog signature
+  for the identical file. The SSH result repeated after login. Desktop acceptance
+  therefore used an interactive user token, with SSH only as command transport;
+  signature validation was not bypassed. The underlying Windows API cause was
+  not traced. The failed SSH attempt preceded the successful reboot check, so
+  that result is not an entirely untouched cold-process measurement.
+- The sample's 1080p stream failed with `SEGMENTS_SELECTED_VARIANT_TOO_LARGE`
+  before network fault injection. Full acquisition currently caps each segment
+  at 8 MiB. This does not cap total video size or reject every 1080p stream;
+  discovery metadata alone does not prove a quality is downloadable. The network
+  fault was exercised on 720p, and recovery downloaded 320x184 successfully.
+
+The graphical installer wizard and downloaded-file SmartScreen behavior were
+not verified by silent installation or the subsequent installed-app UI check.
+Other Windows versions, arbitrary sites/codecs, all failure races and a full
+rendered-UI/SSE matrix are outside this record. Public source/material delivery,
+redistribution decisions, current browser security review and acceptance of the
+exact final release artifact remain separate requirements. These limits do not
+prevent review and commit of the private installer workflow and startup fix.

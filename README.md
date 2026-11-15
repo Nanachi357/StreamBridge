@@ -32,14 +32,20 @@ paywalls, CAPTCHA and access-control bypasses are outside the project scope.
 
 ## Current limits
 
-- Windows x64 is the application target. A clean-Windows acceptance run remains
-  outstanding; developer-machine tests are not a compatibility guarantee.
+- Windows x64 is the application target. A private installer candidate passed the
+  [documented Windows 11 VM checks](docs/private-installer.md#verified-candidate-2026-11-13),
+  followed by a user-reported manual UI check. This is not a compatibility guarantee
+  for every Windows system or clearance for a public binary release.
 - One operation at a time; no persistence or resume of jobs after restart.
 - Passive discovery sees requests the player actually makes, not every possible
   source. Switching a player, quality or episode may reveal additional sources.
 - HLS support is a restricted subset: no encrypted segments, fMP4 initialization
   maps, byte ranges or general discontinuity handling. The media parser caps a
-  playlist at 10,000 segments. DASH, arbitrary direct MP4 and YouTube downloads
+  playlist at 10,000 segments. Full download currently limits each media segment
+  to **8 MiB**, independently of total video size. A larger segment fails with
+  `SEGMENTS_SELECTED_VARIANT_TOO_LARGE`; an advertised quality can therefore be
+  discoverable but unsupported for download. Preview has a separate per-resource
+  budget and may fail independently. DASH, arbitrary direct MP4 and YouTube downloads
   are not implemented by the current acquisition path.
 - **Compressed browser manifests are skipped before reading decoded bodies into
   Java.** The UI reports this; some players may yield fewer or no sources. This
@@ -169,7 +175,9 @@ A separate [private installer workflow](docs/private-installer.md) validates the
 reviewed native inputs and bundles Java, Chromium and the owned FFmpeg runtime in
 a per-user EXE installer. It verifies the actual embedded MSI payload and needs
 no personal tool configuration at runtime. This is for local clean-Windows testing
-only; public redistribution/material requirements and VM acceptance remain open.
+only. Offline installation/startup, restart, media transfer and selected failure
+scenarios passed on one Windows 11 VM; see the acceptance record for scope and
+remaining checks. Public redistribution/material requirements remain open.
 
 On Windows, startup verifies the system `System32/d3dcompiler_47.dll` in a bounded,
 hidden Windows PowerShell process: Authenticode signature, native loading and a
@@ -177,7 +185,8 @@ small shader compilation. Missing/unusable DLLs stop startup with instructions t
 update or repair Windows using official Microsoft tools. A blocked or timed-out
 diagnostic is reported separately from corruption. No DLL is downloaded, copied
 into Windows or repaired automatically; the browser sandbox remains enabled.
-Clean-Windows and visible-browser acceptance are still release gates.
+Final release-artifact acceptance remains required; the private candidate results
+do not qualify a different build automatically.
 
 Hidden package diagnostic (use an absolute path for the report):
 
