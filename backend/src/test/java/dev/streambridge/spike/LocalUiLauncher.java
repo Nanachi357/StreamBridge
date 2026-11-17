@@ -61,7 +61,7 @@ public final class LocalUiLauncher {
         window.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         window.addWindowListener(new WindowAdapter() { @Override public void windowClosing(WindowEvent e) { requestStop(); } });
         var panel = new JPanel(new GridLayout(0, 1, 8, 12)); panel.setBorder(BorderFactory.createEmptyBorder(20,20,20,20));
-        panel.add(new JLabel("Браузер для UI (не Chromium для пошуку відео):")); panel.add(browser);
+        panel.add(new JLabel("Браузер інтерфейсу (пошук відео — в окремому Edge):")); panel.add(browser);
         panel.add(message); panel.add(open); panel.add(copy); panel.add(stop);
         panel.add(new JLabel("Закриття вкладки UI не зупиняє завантаження."));
         window.setContentPane(panel); window.setSize(770,340); window.setLocationByPlatform(true);

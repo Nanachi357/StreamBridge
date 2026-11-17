@@ -85,9 +85,11 @@ jobs:
           $bin = Join-Path $tools 'ffmpeg-9.0.2-essentials_build/bin'
           if (!(Test-Path (Join-Path $bin 'ffmpeg.exe')) -or !(Test-Path (Join-Path $bin 'ffprobe.exe'))) { throw 'Incomplete media tools' }
           "STREAMBRIDGE_FFMPEG_DIR=$bin" >> $env:GITHUB_ENV
-          "PLAYWRIGHT_BROWSERS_PATH=$(Join-Path $env:RUNNER_TEMP 'streambridge-chromium')" >> $env:GITHUB_ENV
-      - name: Install the Chromium revision required by Playwright
-        run: .\backend\gradlew.bat -p backend installSpikeChromium
+      - name: Verify installed Edge prerequisite
+        run: |
+          $edge = Join-Path ${env:ProgramFiles(x86)} 'Microsoft/Edge/Application/msedge.exe'
+          if (!(Test-Path -LiteralPath $edge)) { throw 'Windows CI requires Edge Stable.' }
+          (Get-Item -LiteralPath $edge).VersionInfo.ProductVersion
       - name: Full Windows build and tests
         run: .\backend\gradlew.bat -p backend clean build
       - name: Reject skipped integration tests
@@ -108,28 +110,15 @@ jobs:
       - name: Build developer app-image (not a release)
         run: |
           $ErrorActionPreference = 'Stop'
-          $browsers = @(Get-ChildItem -LiteralPath $env:PLAYWRIGHT_BROWSERS_PATH -Filter chrome.exe -Recurse -File)
-          if ($browsers.Count -ne 1) { throw 'Expected one full Chromium binary' }
-          $browser = $browsers[0].DirectoryName
-          # CI-only test payload; this is not permission to redistribute branded Chrome.
-          .\backend\gradlew.bat -p backend packageWindowsApp "-PbundledChromiumDirectory=$browser"
+          .\backend\gradlew.bat -p backend packageWindowsApp
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $image = (Get-Content backend/build/windows-app/latest-path.txt -Raw).Trim()
-          if (@(Get-ChildItem -LiteralPath $image -Recurse -File -Filter d3dcompiler_47.dll).Count -ne 0) { throw 'Excluded system DLL found in package' }
-          $payload = Join-Path $image 'app/native/chromium'
-          $original = @(Get-ChildItem -LiteralPath $browser -Recurse -File)
-          if (@($original | Where-Object Name -IEQ 'd3dcompiler_47.dll').Count -eq 0) { throw 'Fixture lacks the DLL whose exclusion must be tested' }
-          $expected = @($original | Where-Object Name -INE 'd3dcompiler_47.dll')
-          if (@(Get-ChildItem -LiteralPath $payload -Recurse -File).Count -ne $expected.Count) { throw 'Unexpected browser payload count' }
-          foreach ($file in $expected) {
-            $target = Join-Path $payload ([IO.Path]::GetRelativePath($browser, $file.FullName))
-            if ((Get-FileHash -LiteralPath $file.FullName).Hash -ne (Get-FileHash -LiteralPath $target).Hash) { throw 'Browser payload mismatch' }
-          }
+          if (Test-Path -LiteralPath "$image/app/native/chromium") { throw 'Unexpected browser payload' }
       - name: Check packaged application without visible windows
         run: |
           $ErrorActionPreference = 'Stop'
           $image = (Get-Content backend/build/windows-app/latest-path.txt -Raw).Trim()
-          # The bundled browser must work even when the external browser cache is absent.
+          # Installed Edge must work with no Playwright browser cache.
           $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $env:RUNNER_TEMP 'absent-browser-cache'
           $report = Join-Path $env:RUNNER_TEMP 'streambridge-self-check.json'
           $process = Start-Process -FilePath (Join-Path $image 'StreamBridge.exe') -ArgumentList ('--self-check="' + $report + '"') -WorkingDirectory $image -WindowStyle Hidden -PassThru

@@ -1,5 +1,11 @@
 # Private Windows installer acceptance
 
+**Transition notice:** discovery now requires installed Microsoft Edge Stable.
+The legacy builder below still includes an unused browser payload; removal is
+pending. There is no runtime fallback to that payload and no separate shader-DLL
+startup probe. Earlier bundled-browser VM results below are historical and do
+not qualify this changed runtime. Do not publish this intermediate package.
+
 This is a local engineering workflow, not a public alpha release. Do not upload
 the installer or bundled browser to GitHub releases or public CI artifacts while
 the distribution/material decisions remain open. See [browser materials](browser/hibbiki-materials.md).
@@ -60,7 +66,7 @@ developer caches or personal configuration with the guest.
 2. Compare installed files against `payload-manifest.json` using
    `scripts/Verify-FileInventory.ps1`. Run the installed EXE with
    `--self-check=C:\Users\TestUser\Desktop\self-check.json` and inspect its result.
-3. With networking disabled, verify installation and startup need no downloads.
+3. With Edge already installed and networking disabled, verify installation and startup need no downloads.
    Enable networking for the media checks; normal network restrictions stay enabled.
 4. Discover an owned supported stream, preview, select quality/audio, save to
    Downloads and another directory. Verify playback, cancellation, partial cleanup,

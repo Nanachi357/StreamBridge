@@ -11,27 +11,10 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.*;
 
 class ChromiumLaunchTest {
-    @org.junit.jupiter.api.io.TempDir Path root;
-    @Test void packagedBrowserWinsOverExternalCacheAndNeverUsesWorkingDirectory() throws Exception {
-        Path jar = Files.writeString(root.resolve("streambridge.jar"), "fixture");
-        Path external = root.resolve("external/chrome.exe");
-        assertEquals(external, ChromiumLaunch.executablePath(jar, external));
-        Path bundled = Files.createDirectories(root.resolve("native/chromium")).resolve("chrome.exe");
-        Files.writeString(bundled, "fixture");
-        assertEquals(bundled, ChromiumLaunch.executablePath(jar, external));
-        assertEquals(external, ChromiumLaunch.executablePath(root, external));
-        Files.delete(bundled);
-        assertThrows(IllegalStateException.class, () -> ChromiumLaunch.executablePath(jar, external));
-        Files.delete(bundled.getParent());
-        Files.writeString(root.resolve("bundled-browser.required"), "required");
-        assertThrows(IllegalStateException.class, () -> ChromiumLaunch.executablePath(jar, external));
-    }
     @Test void visibleAndHiddenLaunchesRequireSandboxAndSameFullBinary() {
         for (boolean headless : new boolean[]{false, true}) {
             BrowserType type = mock(BrowserType.class);
             Browser browser = mock(Browser.class);
-            Path executable = Path.of("owned-chromium", "chrome.exe").toAbsolutePath();
-            when(type.executablePath()).thenReturn(executable.toString());
             when(type.launch(any(BrowserType.LaunchOptions.class))).thenReturn(browser);
 
             assertSame(browser, ChromiumLaunch.launch(type, headless));
@@ -39,7 +22,9 @@ class ChromiumLaunchTest {
             verify(type).launch(options.capture());
             assertEquals(Boolean.TRUE, options.getValue().chromiumSandbox);
             assertEquals(headless, options.getValue().headless);
-            assertEquals(executable, options.getValue().executablePath);
+            assertEquals("msedge", options.getValue().channel);
+            assertNull(options.getValue().executablePath);
+            verify(type, never()).executablePath();
             assertEquals(60_000.0, options.getValue().timeout);
             assertEquals(ChromiumFeaturePolicy.arguments(), options.getValue().args);
             assertNull(options.getValue().ignoreAllDefaultArgs);
@@ -47,10 +32,9 @@ class ChromiumLaunchTest {
         }
     }
 
-    @Test void failedLaunchIsNotRetriedWithoutSandbox() {
+    @Test void missingEdgeIsNotDownloadedOrReplacedWithAnotherBrowser() {
         BrowserType type = mock(BrowserType.class);
-        when(type.executablePath()).thenReturn(Path.of("missing-chromium.exe").toAbsolutePath().toString());
-        var failure = new PlaywrightException("Synthetic sandbox launch failure");
+        var failure = new PlaywrightException("Microsoft Edge is not installed");
         when(type.launch(any(BrowserType.LaunchOptions.class))).thenThrow(failure);
         assertSame(failure, assertThrows(PlaywrightException.class, () -> ChromiumLaunch.launch(type, false)));
         var options = ArgumentCaptor.forClass(BrowserType.LaunchOptions.class);
@@ -60,7 +44,6 @@ class ChromiumLaunchTest {
 
     @Test void discoveryUsesOnlyOwnedGatewayAndClosedGatewayNeverFallsBackToDirect() throws Exception {
         BrowserType type=mock(BrowserType.class);
-        when(type.executablePath()).thenReturn(Path.of("owned-chromium","chrome.exe").toAbsolutePath().toString());
         try(var network=new BrowserNetworkProxy()) {
             ChromiumLaunch.launch(type,false,network);
             var options=ArgumentCaptor.forClass(BrowserType.LaunchOptions.class);verify(type).launch(options.capture());
@@ -70,6 +53,8 @@ class ChromiumLaunchTest {
             assertTrue(options.getValue().args.contains("--webrtc-ip-handling-policy=disable_non_proxied_udp"));
             assertTrue(options.getValue().args.containsAll(ChromiumFeaturePolicy.arguments()));
             assertEquals(Boolean.TRUE,options.getValue().chromiumSandbox);
+            assertEquals("msedge", options.getValue().channel);
+            assertNull(options.getValue().executablePath);
             network.close();assertThrows(IllegalStateException.class,()->ChromiumLaunch.launch(type,false,network));
             verify(type,times(1)).launch(any(BrowserType.LaunchOptions.class));
         }
@@ -103,7 +88,7 @@ class ChromiumLaunchTest {
             assertEquals("Owned sandbox test", fixture.title());
             var diagnostics = context.newPage();
             diagnostics.setDefaultTimeout(10_000);
-            diagnostics.navigate("chrome://version");
+            diagnostics.navigate("edge://version");
             String commandLine = diagnostics.locator("#command_line").innerText();
             ChromiumFeaturePolicyTest.assertEffectiveFeatures(commandLine);
             assertEquals(headless, commandLine.contains("--headless"));
@@ -111,7 +96,7 @@ class ChromiumLaunchTest {
                     "--disable-setuid-sandbox", "--single-process"}) {
                 assertFalse(commandLine.contains(flag), flag);
             }
-            diagnostics.navigate("chrome://sandbox");
+            diagnostics.navigate("edge://sandbox");
             diagnostics.waitForFunction("() => document.body.innerText.includes('Renderer')");
             String report = diagnostics.locator("body").innerText();
             assertWindowsRendererPolicies(report);
@@ -135,7 +120,7 @@ class ChromiumLaunchTest {
     private static void assertWindowsRendererPolicies(String report) {
         var renderers = report.lines().map(line -> line.split("\t", -1))
                 .filter(cells -> cells.length >= 2 && cells[1].equals("Renderer")).toList();
-        assertFalse(renderers.isEmpty(), "No renderer policy rows found in chrome://sandbox");
+        assertFalse(renderers.isEmpty(), "No renderer policy rows found in edge://sandbox");
         for (String[] cells : renderers) {
             assertTrue(cells.length >= 6, "Incomplete renderer policy row");
             assertEquals("Renderer", cells[3], "Renderer sandbox type");

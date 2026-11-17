@@ -2,7 +2,8 @@ StreamBridge private installer test — NOT A PUBLIC RELEASE
 
 This test includes private Java, Chromium and FFmpeg runtimes. No separate Java,
 Gradle, Node.js, FFmpeg or tools.properties setup is needed. The default web browser
-opens the local UI; the bundled Chromium is used for discovery.
+opens the local UI. Discovery requires separately installed Microsoft Edge Stable
+and a temporary profile. The legacy bundled Chromium is unused and pending removal.
 
 Installed native tools take precedence over developer environment/settings.
 Missing bundled components cause startup failure, never external-tool fallback.

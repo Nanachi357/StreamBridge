@@ -76,7 +76,7 @@ final class LauncherSupport {
             log.println("settings=" + LauncherSettings.file() + " exists=" + Files.isRegularFile(LauncherSettings.file()));
             try {
                 ProcessBuilder builder = LauncherSettings.childJava(LauncherDependencyProbe.class, run.resolve("probe.log").toString());
-                for (String key : List.of("STREAMBRIDGE_FFMPEG_DIR", "PLAYWRIGHT_BROWSERS_PATH")) {
+                for (String key : List.of("STREAMBRIDGE_FFMPEG_DIR")) {
                     String value = builder.environment().get(key);
                     log.println(key + " childEnvironment=" + value);
                 }
@@ -113,14 +113,11 @@ final class LauncherSupport {
         return switch (exit) {
             case 21 -> "Не вдалося запустити FFmpeg. Для встановленого комплекту перевстанови StreamBridge; для зовнішніх інструментів перевір mediaToolsDirectory у " + LauncherSettings.file();
             case 22 -> "Не вдалося запустити FFprobe. Для встановленого комплекту перевстанови StreamBridge; для зовнішніх інструментів перевір mediaToolsDirectory у " + LauncherSettings.file();
-            case 23 -> "Не вдалося запустити або перевірити Chromium з обов’язковою пісочницею. Захист не вимикався. Для встановленого комплекту перевстанови StreamBridge; для зовнішнього браузера перевір chromiumDirectory у " + LauncherSettings.file();
-            case 24 -> "Chromium не пройшов перевірку мережевої ізоляції WebRTC. Запуск зупинено; захист не вимикався.";
-            case 25 -> "У Windows відсутня системна d3dcompiler_47.dll (System32). Онови або віднови компоненти Windows офіційними засобами Microsoft. Не завантажуй окремі DLL зі сторонніх сайтів.";
-            case 26 -> "Системна d3dcompiler_47.dll не пройшла перевірку підпису або працездатності. Онови або віднови компоненти Windows офіційними засобами Microsoft. Деталі — у журналі діагностики.";
-            case 27 -> "Не вдалося виконати перевірку системної d3dcompiler_47.dll. Це не обов’язково пошкодження файла: перевір доступність Windows PowerShell та обмеження політик. Деталі — у журналі діагностики.";
-            case 28, 29, 30 -> (exit == 28 ? "FFmpeg" : exit == 29 ? "FFprobe" : "Chromium")
+            case 23 -> "Не вдалося запустити або перевірити Microsoft Edge Stable. Установи чи онови його з https://www.microsoft.com/edge/download. Якщо він уже встановлений, перевір політики браузера й журнал діагностики. Захист не вимикався.";
+            case 24 -> "Microsoft Edge не пройшов перевірку мережевої ізоляції WebRTC. Запуск зупинено; захист не вимикався.";
+            case 28, 29, 30 -> (exit == 28 ? "FFmpeg" : exit == 29 ? "FFprobe" : "Microsoft Edge")
                     + " не завершив перевірку за відведений час. Перший запуск може бути повільнішим. Закрий зайві програми й повтори запуск; якщо помилка повториться, збережи діагностику. Таймаут не означає пошкодження файлів. Захист не вимикався.";
-            default -> "Не вдалося запустити Chromium Playwright. Перевір chromiumDirectory у " + LauncherSettings.file();
+            default -> "Не вдалося перевірити компоненти StreamBridge. Деталі — у журналі діагностики.";
         };
     }
 

@@ -10,7 +10,7 @@ Windows launcher (LocalUiLauncher)
   -> local HTTP server (LocalUiSpike) <-> ordinary browser UI: HTTP commands + SSE
   -> operation owner (LocalUiSession)
        -> child JVM (RealDiscoverySpike), bounded line-based JSON events on stdout
-            -> isolated Playwright Chromium -> public-address SOCKS5 gateway
+            -> installed Edge (temporary Playwright profile) -> public-address SOCKS5 gateway
             -> observed HLS catalog -> user selection -> transfer plan
             -> DNS-pinned HTTP acquisition -> owned local segment files
             -> FFmpeg / FFprobe, local inputs only

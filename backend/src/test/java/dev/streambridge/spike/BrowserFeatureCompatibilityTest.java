@@ -49,6 +49,14 @@ class BrowserFeatureCompatibilityTest {
     page.waitForCondition(()->catalog.snapshot().size()==2,new Page.WaitForConditionOptions().setTimeout(5000));
     assertEquals(2,authenticated.get());assertEquals(2,catalog.snapshot().size());
     assertTrue(context.cookies().stream().anyMatch(c->c.name.equals("fixture_session")&&c.httpOnly));
+    page.evaluate("localStorage.setItem('streambridge_fixture', 'owned')");
+    // Another discovery context must not inherit credentials or storage.
+    try (var next = browser.newContext()) {
+      assertTrue(next.cookies().isEmpty());
+      var nextPage = next.newPage();
+      nextPage.navigate(origin);
+      assertNull(nextPage.evaluate("localStorage.getItem('streambridge_fixture')"));
+    }
   }finally{site.stop(0);player.stop(0);}
  }
 }

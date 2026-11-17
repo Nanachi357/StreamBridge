@@ -30,10 +30,6 @@ public final class LauncherDependencyProbe {
         long started = System.nanoTime();
         log.println("javaHome=" + System.getProperty("java.home"));
         log.println("workingDirectory=" + Path.of("").toAbsolutePath());
-        stage(log, started, "system-library-start");
-        int systemLibrary = WindowsSystemLibrary.verify(log);
-        stage(log, started, "system-library-finished");
-        if (systemLibrary != 0) return systemLibrary;
         for (String tool : new String[]{"ffmpeg", "ffprobe"}) {
             try {
                 String directory = System.getenv("STREAMBRIDGE_FFMPEG_DIR");
@@ -51,7 +47,7 @@ public final class LauncherDependencyProbe {
                 return tool.equals("ffmpeg") ? 21 : 22;
             }
         }
-        log.println("chromiumCache=" + System.getenv("PLAYWRIGHT_BROWSERS_PATH"));
+        log.println("browserChannel=msedge");
         stage(log, started, "playwright-driver-start");
         try (var network = new BrowserNetworkProxy();
              var playwright = Playwright.create(new Playwright.CreateOptions().setEnv(Map.of("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1")))) {
@@ -59,7 +55,7 @@ public final class LauncherDependencyProbe {
             try (var browser = ChromiumLaunch.launch(playwright.chromium(), true, network);
                  var context = browser.newContext()) {
                 stage(log, started, "browser-context-ready");
-                log.println("chromiumExecutable=" + ChromiumLaunch.executablePath(playwright.chromium()));
+                log.println("edgeVersion=" + browser.version());
                 log.println("chromiumSandboxRequested=true");
                 log.println("browserNetworkGateway=public-only-socks5");
                 var page = context.newPage(); page.setContent("<title>StreamBridge startup check</title>");

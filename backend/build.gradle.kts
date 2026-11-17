@@ -62,21 +62,9 @@ tasks.withType<Test>().configureEach {
     include("**/*Test.class")
 }
 
-tasks.register<JavaExec>("installSpikeChromium") {
-    group = "spike"
-    description = "Install the Chromium version required by the browser spike."
-    classpath = sourceSets["test"].runtimeClasspath
-    mainClass.set("com.microsoft.playwright.CLI")
-    args("install", "chromium", "--no-shell")
-    environment("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1")
-    javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    })
-}
-
 tasks.register<JavaExec>("browserSpike") {
     group = "spike"
-    description = "Open visible Chromium; press Enter in the console to close it."
+    description = "Open visible Microsoft Edge; press Enter in the console to close it."
     classpath = sourceSets["test"].runtimeClasspath
     mainClass.set("dev.streambridge.spike.BrowserSpike")
     standardInput = System.`in`
@@ -87,7 +75,7 @@ tasks.register<JavaExec>("browserSpike") {
 
 tasks.register<JavaExec>("hlsDiscoverySpike") {
     group = "spike"
-    description = "Observe a local HLS player's requests; click Play in Chromium."
+    description = "Observe a local HLS player's requests; click Play in Edge."
     classpath = sourceSets["test"].runtimeClasspath
     mainClass.set("dev.streambridge.spike.HlsDiscoverySpike")
     systemProperty("streambridge.hlsFixture", layout.buildDirectory.dir("hls-fixture").get().asFile.absolutePath)
@@ -203,7 +191,7 @@ val verifyPilotJar = tasks.register("verifyPilotJar") {
         JarFile(pilotJar.get().archiveFile.get().asFile).use { jar ->
             val names = jar.entries().asSequence().map { it.name }.toSet()
             check(jar.manifest.mainAttributes.getValue("Main-Class") == "dev.streambridge.spike.LocalUiLauncher")
-            for (required in listOf("dev/streambridge/spike/LocalUiLauncher.class", "spike/ui/index.html", "spike/ui/app.js", "spike/ui/app.css", "spike/launcher/check-d3dcompiler.ps1")) {
+            for (required in listOf("dev/streambridge/spike/LocalUiLauncher.class", "spike/ui/index.html", "spike/ui/app.js", "spike/ui/app.css")) {
                 check(required in names) { "Missing pilot entry: $required" }
             }
             check(names.none { it.endsWith("Test.class") || it.contains("Test$") || it.contains("LocalUiWorkerFixture") }) {

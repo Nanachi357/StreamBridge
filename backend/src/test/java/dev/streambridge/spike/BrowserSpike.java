@@ -15,7 +15,7 @@ import com.microsoft.playwright.Playwright;
 public final class BrowserSpike {
 
     public static void main(String[] args) throws IOException {
-        // Browser installation is explicit: run installSpikeChromium first.
+        // Edge Stable must already be installed; StreamBridge never downloads a browser.
         Playwright.CreateOptions options = new Playwright.CreateOptions()
                 .setEnv(Map.of("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1"));
 
@@ -34,7 +34,7 @@ public final class BrowserSpike {
                     </html>
                     """);
 
-            System.out.println("Chromium version: " + browser.version());
+            System.out.println("Edge version: " + browser.version());
             System.out.println("Page title: " + page.title());
             System.out.println("Press Enter in this console to close the browser.");
 

@@ -12,6 +12,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class LauncherSupportTest {
     @TempDir Path root;
+    @Test void browserFailureIdentifiesExternalEdgePrerequisite() {
+        String message = LauncherSupport.probeFailure(23);
+        assertTrue(message.contains("Microsoft Edge Stable"));
+        assertTrue(message.contains("https://www.microsoft.com/edge/download"));
+        assertFalse(message.contains("chromiumDirectory"));
+    }
     private static final String KEY = "a".repeat(72);
     private static Process probe(String mode) throws IOException {
         String java = System.getProperty("os.name").startsWith("Windows") ? "javaw.exe" : "java";

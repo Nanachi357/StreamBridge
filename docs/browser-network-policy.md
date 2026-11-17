@@ -1,6 +1,6 @@
 # Discovery browser background services
 
-StreamBridge uses an isolated browser profile for media discovery. Its shared
+StreamBridge uses installed Microsoft Edge Stable with an isolated temporary browser profile for media discovery. Its shared
 launch factory suppresses three services that are unnecessary for that task:
 
 | Setting | Intended effect | Limit |
@@ -31,18 +31,16 @@ override. Review the contract when upgrading Playwright.
 ## Verification and limits
 
 Unit tests check version mismatch, defaults and environment semantics. Opt-in
-headless integration tests inspect the effective switches in `chrome://version`
+headless integration tests inspect the effective switches in `edge://version`
 and exercise a local two-origin fixture with credentialed CORS, an HttpOnly
 cookie, an HTTP redirect and iframe HLS discovery. Use the existing browser-test
 instructions in the [README](../README.md).
 
-Private observations with Hibbiki Chromium 157.0.8103.39 found no proxy
-destinations during a 60-second empty-page observation with these controls.
-Deliberate Google sign-in-page and example.com navigation still succeeded.
-This observation is bounded in time and does not prove that the browser never
-contacts Google. No real account login or exhaustive production-site check was
-performed. Browser updates require renewed compatibility and traffic checks.
+The installed browser updates independently. These Chromium feature switches are
+best-effort background-service controls, not a promise that Edge has no Microsoft
+or Google background traffic. Compatibility tests verify effective arguments,
+sandboxing, profile isolation and protected networking. Renew those checks after
+browser/Playwright updates; website functionality is not guaranteed for every site.
 
-This application policy does not approve a particular third-party browser for
-redistribution. Browser licensing, source materials and installer readiness are
-separate release requirements.
+StreamBridge does not distribute or compile a browser. Edge is installed and
+updated separately through Microsoft.

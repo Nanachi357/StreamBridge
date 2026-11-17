@@ -290,7 +290,7 @@ class BrowserNetworkProxyTest {
                 assertThrows(PlaywrightException.class,()->page.navigate(url));
             }
             assertEquals(0,privateSite.hits.get());assertTrue(proxy.snapshot().rejected()>0);
-            var diagnostics=context.newPage();diagnostics.navigate("chrome://version");
+            var diagnostics=context.newPage();diagnostics.navigate("edge://version");
             String flags=diagnostics.locator("#command_line").innerText();
             assertTrue(flags.contains("--proxy-server=socks5://127.0.0.1:"));
             assertTrue(flags.contains("<-loopback>"));assertTrue(flags.contains("--disable-quic"));

@@ -53,7 +53,7 @@ class LauncherSettingsTest {
         assertInstanceOf(NoSuchFileException.class, failure.getCause());
         assertTrue(failure.getMessage().contains(root.resolve("absent").toString()));
     }
-    @Test void environmentOnlySetupRemainsSupportedWithDefaultPlaywrightCache() throws Exception {
+    @Test void environmentOnlyMediaSetupRemainsSupported() throws Exception {
         String media = root.resolve("media").toString();
         assertEquals(Map.of("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1", "STREAMBRIDGE_FFMPEG_DIR", media),
                 LauncherSettings.environment(root.resolve("absent"), Map.of("STREAMBRIDGE_FFMPEG_DIR", media)));
@@ -79,7 +79,7 @@ class LauncherSettingsTest {
         Files.writeString(file,"mediaToolsDirectory="+tools+"\nchromiumDirectory="+browser+"\nJAVA_HOME=untrusted\n");
         var result=LauncherSettings.environment(file,Map.of("STREAMBRIDGE_FFMPEG_DIR",override));
         assertEquals(override,result.get("STREAMBRIDGE_FFMPEG_DIR"));
-        assertEquals(Path.of(browser).toString(),result.get("PLAYWRIGHT_BROWSERS_PATH"));
+        assertFalse(result.containsKey("PLAYWRIGHT_BROWSERS_PATH")); // Old browser setting is ignored.
         assertFalse(result.containsKey("JAVA_HOME"));
     }
     @Test void relativePathsAreRejectedRatherThanDependingOnWorkingDirectory() throws Exception {

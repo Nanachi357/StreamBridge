@@ -13,18 +13,18 @@ The experimental browser and download components treat page URLs, redirects,
 manifests, filenames, subprocess arguments, and downloaded content as untrusted
 input. Passing functional tests is not a comprehensive security assessment.
 
-Chromium discovery and startup checks use the shared `ChromiumLaunch` policy:
-the OS sandbox is explicitly requested, startup is bounded to 20 seconds, and a
+Installed Edge discovery and startup checks use the shared `ChromiumLaunch` policy:
+the OS sandbox is explicitly requested, browser launch is bounded to 60 seconds, and a
 failed launch is never retried with the sandbox disabled. An isolated browser
 context separates session data; it is not a substitute for OS sandboxing.
 Do not add `--no-sandbox` as a workaround for startup failures.
 
 Windows integration checks inspect launch arguments and Chromium's own
-`chrome://sandbox` renderer policy report (Lockdown token and Untrusted integrity).
+`edge://sandbox` renderer policy report (Lockdown token and Untrusted integrity).
 These checks do not prove that every auxiliary process is sandboxed, prevent all
 browser exploits, or replace clean-Windows acceptance of the final package.
 
-Discovery and startup Chromium use an application-owned, loopback-only SOCKS5
+Discovery and startup Edge use an application-owned, loopback-only SOCKS5
 CONNECT gateway. For each new connection it resolves and checks all returned IP
 addresses, rejects non-public destinations and ports other than 80/443, and connects
 to a checked IP without a second lookup. There is no cached host-allow decision or

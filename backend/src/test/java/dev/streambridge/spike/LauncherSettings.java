@@ -39,15 +39,14 @@ final class LauncherSettings {
         } catch (NoSuchFileException missing) {
             if (environment.getOrDefault("STREAMBRIDGE_FFMPEG_DIR", "").isBlank())
                 throw new IOException("Не знайдено файл налаштувань: " + file
-                        + "\nСтвори його з tools.example.properties та вкажи mediaToolsDirectory і chromiumDirectory."
+                        + "\nСтвори його з tools.example.properties та вкажи mediaToolsDirectory."
                         + "\nАльтернатива для медіаінструментів: STREAMBRIDGE_FFMPEG_DIR.", missing);
         } catch (IOException | IllegalArgumentException failure) {
             throw new IOException("Не вдалося прочитати файл налаштувань: " + file
                     + "\n" + failure.getClass().getSimpleName() + ": " + failure.getMessage(), failure);
         }
         var result = new HashMap<String,String>();
-        for (var entry : Map.of("chromiumDirectory", "PLAYWRIGHT_BROWSERS_PATH",
-                "mediaToolsDirectory", "STREAMBRIDGE_FFMPEG_DIR").entrySet()) {
+        for (var entry : Map.of("mediaToolsDirectory", "STREAMBRIDGE_FFMPEG_DIR").entrySet()) {
             String value = environment.get(entry.getValue());
             if (value == null || value.isBlank()) value = settings.getProperty(entry.getKey());
             if (value != null && !value.isBlank()) {

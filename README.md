@@ -12,7 +12,7 @@ paywalls, CAPTCHA and access-control bypasses are outside the project scope.
 ## What works
 
 - A Windows launcher opens a local web UI in your chosen/default browser.
-- Discovery opens a separate, isolated Chromium context. Start the intended video
+- Discovery opens a separate Microsoft Edge window with an isolated temporary profile. Start the intended video
   or switch players/episodes there to generate media requests.
 - Source cards show requesting frames, declared qualities, associated audio and
   observed duration. Sources are not automatically classified as content or ads.
@@ -32,10 +32,10 @@ paywalls, CAPTCHA and access-control bypasses are outside the project scope.
 
 ## Current limits
 
-- Windows x64 is the application target. A private installer candidate passed the
-  [documented Windows 11 VM checks](docs/private-installer.md#verified-candidate-2026-11-13),
-  followed by a user-reported manual UI check. This is not a compatibility guarantee
-  for every Windows system or clearance for a public binary release.
+- Windows 11 x64 with installed **Microsoft Edge Stable** is the application target.
+  Edge is required for discovery, independently of the browser chosen for the UI.
+  Discovery uses installed Edge only; the legacy private packaging option described below is still present but its browser is unused. See the
+  [installer acceptance procedure](docs/private-installer.md).
 - One operation at a time; no persistence or resume of jobs after restart.
 - Passive discovery sees requests the player actually makes, not every possible
   source. Switching a player, quality or episode may reveal additional sources.
@@ -88,17 +88,11 @@ is needed; dependency downloads and ordinary up-to-date task checks still work.
 
 ## Set up the Windows pilot
 
-1. Install the browser revision selected by Playwright Java **1.64.0**:
-
-   ```powershell
-   $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $env:LOCALAPPDATA 'StreamBridge-dev/playwright'
-   .\backend\gradlew.bat -p backend installSpikeChromium
-   ```
-
-   Playwright's `chromium` download is **Chrome for Testing**. It remains an
-   external development dependency; its binary redistribution terms must be
-   resolved before bundling it in an installer. After upgrading Playwright,
-   repeat this install command; the previous browser revision is insufficient.
+1. Install or update **Microsoft Edge Stable** using
+   [Microsoft's official installer](https://www.microsoft.com/edge/download).
+   It is normally present on Windows 11, but can be absent or restricted by policy.
+   Playwright Java **1.64.0** uses its `msedge` channel; no browser-cache download
+   or custom executable path is needed. Edge updates independently of StreamBridge.
 
 2. Obtain FFmpeg and FFprobe from a trusted distribution linked by the
    [FFmpeg project](https://ffmpeg.org/download.html). Review its license and verify
@@ -115,7 +109,7 @@ is needed; dependency downloads and ordinary up-to-date task checks still work.
    ```
 
    This opens visible windows. The browser chosen for the UI is separate from the
-   isolated Chromium used for discovery. Use **Finish StreamBridge** in the launcher
+   isolated Edge used for discovery. Use **Finish StreamBridge** in the launcher
    to stop the application; closing the UI tab does not stop a download.
 
 For persistent source-launch settings, copy `scripts/launcher.example.json` to the
@@ -130,7 +124,7 @@ $env:STREAMBRIDGE_VISIBLE_BROWSER_CHECK = '0'
 .\backend\gradlew.bat -p backend test --rerun-tasks
 ```
 
-Keep the Chromium and FFmpeg variables from setup. Fixtures use owned local
+Keep the FFmpeg variable from setup; Edge must be installed. Fixtures use owned local
 servers and generated media. No real video site is needed for these tests.
 
 ## Build an EXE application folder
@@ -148,45 +142,22 @@ The Windows x64 HotSpot ZIP SHA-256 is
 The new folder is under `backend/build/windows-app/<build-id>/StreamBridge`;
 `backend/build/windows-app/latest-path.txt` gives its full path. Run
 `StreamBridge.exe` and keep the entire folder together. Java is included;
-Chromium and FFmpeg/FFprobe are still external. For persistent tool paths, copy
+Microsoft Edge and FFmpeg/FFprobe are external prerequisites. For persistent tool paths, copy
 `backend/packaging/tools.example.properties` to
 `%LOCALAPPDATA%/StreamBridge/pilot-launcher/tools.properties` and edit it.
 Explicit environment variables take precedence. This is an unsigned developer
 app-image, **not the planned self-contained alpha installer**. The numeric Windows
 version is currently `0.1.0`; Gradle's development version is `0.1.0-SNAPSHOT`.
 
-For private packaging tests, an explicitly supplied **unpacked** browser directory
-can be included (absolute path containing `chrome.exe`):
+The [private installer workflow](docs/private-installer.md) still accepts its legacy
+browser input in this intermediate revision. That payload is **unused**: discovery
+requires installed Edge Stable, even when an old bundle is supplied. The normal
+app-image command above does not include a browser. Browser downloading and the
+separate Windows shader-DLL startup probe have been removed.
 
-```powershell
-.\backend\gradlew.bat -p backend packageWindowsApp '-PbundledChromiumDirectory=C:/Tools/reviewed-chromium'
-```
-
-This stages the browser under `app/native/chromium`; that browser takes precedence
-over the external Playwright cache. A broken included browser does not silently
-fall back to another installation. `d3dcompiler_47.dll` is excluded at every depth,
-case-insensitively, and the final image is checked for its absence. Other files
-are preserved. Nested archives are rejected because they could reintroduce it.
-This mechanism does **not** clear a browser build for public redistribution;
-matching sources, notices and remaining component licenses still require review.
-FFmpeg/FFprobe remain external with this developer command.
-
-A separate [private installer workflow](docs/private-installer.md) validates the
-reviewed native inputs and bundles Java, Chromium and the owned FFmpeg runtime in
-a per-user EXE installer. It verifies the actual embedded MSI payload and needs
-no personal tool configuration at runtime. This is for local clean-Windows testing
-only. Offline installation/startup, restart, media transfer and selected failure
-scenarios passed on one Windows 11 VM; see the acceptance record for scope and
-remaining checks. Public redistribution/material requirements remain open.
-
-On Windows, startup verifies the system `System32/d3dcompiler_47.dll` in a bounded,
-hidden Windows PowerShell process: Authenticode signature, native loading and a
-small shader compilation. Missing/unusable DLLs stop startup with instructions to
-update or repair Windows using official Microsoft tools. A blocked or timed-out
-diagnostic is reported separately from corruption. No DLL is downloaded, copied
-into Windows or repaired automatically; the browser sandbox remains enabled.
-Final release-artifact acceptance remains required; the private candidate results
-do not qualify a different build automatically.
+Legacy private browser packaging is pending removal; do not publish its output.
+Its earlier VM acceptance does not qualify the Edge runtime. No fallback download
+or launch without the sandbox is performed.
 
 Hidden package diagnostic (use an absolute path for the report):
 

@@ -4,29 +4,13 @@ Run StreamBridge.exe. Keep this entire folder together: app/ and runtime/ are re
 Java is included. Neither a system Java installation nor Gradle is needed to run it.
 This is an unsigned app-image, not an installer. Do not bypass Windows security warnings.
 
-Chrome for Testing (the version required by Playwright Java 1.64.0) and FFmpeg/FFprobe
-are external. This image does not redistribute those executables. Reinstall the
-Playwright browser after a dependency upgrade. The private Java runtime is built
-with Eclipse Temurin 21.0.13+9.
-Configure them in:
-  %LOCALAPPDATA%\StreamBridge\pilot-launcher\tools.properties
-Copy tools.example.properties there and edit the paths. Use forward slashes.
-Alternatively set PLAYWRIGHT_BROWSERS_PATH and STREAMBRIDGE_FFMPEG_DIR; explicit
-environment values take precedence. No system settings are changed automatically.
-
-An optional private-test build may include Chromium under app/native/chromium.
-When present, it takes precedence over the external cache; missing chrome.exe in
-that directory is an error, not a request to use another browser. FFmpeg remains
-external. Including a browser does not establish permission to redistribute it.
-
-The package excludes d3dcompiler_47.dll and relies on the x64 Windows system copy.
-Normal startup checks its signature, native loading and shader compilation using
-a hidden, bounded Windows PowerShell process. Missing/unusable components stop
-startup: update or repair Windows using official Microsoft tools. Do not download
-individual DLLs from third-party sites. If the diagnostic cannot run (for example,
-PowerShell is restricted), that is reported separately from DLL corruption. No
-system files or policies are changed. Other browser libraries retain their own
-license/source requirements. Clean-Windows acceptance remains outstanding.
+Microsoft Edge Stable must already be installed. Obtain it from
+https://www.microsoft.com/edge/download if absent. Discovery launches Edge with
+a temporary isolated profile; your normal browser profile is not used. No browser is downloaded. The default image includes no browser; the legacy
+private packaging option may still copy an unused browser pending its removal. Java uses Eclipse Temurin 21.0.13+9.
+FFmpeg/FFprobe are external in the developer app-image. Configure mediaToolsDirectory
+in %LOCALAPPDATA%/StreamBridge/pilot-launcher/tools.properties using the example,
+or set STREAMBRIDGE_FFMPEG_DIR. The private installer includes the media runtime.
 
 The launcher opens the local web UI in your saved/default browser. Use its Finish
 button to stop the server; closing the UI tab does not stop it. If an older source
@@ -60,7 +44,7 @@ the page's memory use inside Chromium.
 
 No-window diagnostic (run with an absolute destination for the private JSON report):
   StreamBridge.exe --self-check=C:\Temp\streambridge-check.json
-This checks bundled Java child execution, tools, a static headless Chromium page,
+This checks bundled Java child execution, tools, a static headless Edge page,
 the browser's direct WebRTC isolation against owned local UDP/TCP receivers,
 packaged web resources, authenticated local HTTP readiness, acquisition HTTP
 transport and Downloads lookup. No video site is

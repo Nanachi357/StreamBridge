@@ -32,7 +32,9 @@ top-level dependency scan does not clear bundled native libraries for release.
 
 Optional browser staging (`-PbundledChromiumDirectory=<absolute-unpacked-directory>`)
 omits `d3dcompiler_47.dll` and verifies its absence from the resulting app-image.
-Startup relies on and checks the Windows system copy. Do not embed the original
+The former system shader-DLL startup probe has been removed. Discovery requires
+installed Edge Stable and ignores the legacy bundled browser. These packaging
+and material notes describe the legacy private workflow pending its removal. Do not embed the original
 complete browser archive in an installer: it would still redistribute that DLL.
 This policy avoids shipping that one Microsoft binary; it does not resolve the
 separate `dxcompiler.dll`, Chromium/ANGLE, embedded FFmpeg, or other third-party

@@ -37,7 +37,7 @@ do not require artificial tests that merely repeat the document.
 The workflow runs on pushes and pull requests with read-only repository permissions:
 
 - Portable Java build/tests and Node UI tests on Ubuntu.
-- Windows integration with freshly installed pinned Chromium and checksum-verified
+- Windows integration with the runner's installed Edge Stable and checksum-verified
   FFmpeg, no visible browser windows; skipped Java tests fail this job.
 - Windows app-image creation and hidden self-check using its bundled Java.
 - Gitleaks on the checked-out files, with redacted output and no blanket exclusions.
