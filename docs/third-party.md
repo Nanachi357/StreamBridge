@@ -12,8 +12,8 @@ This is a source-development inventory, not a completed redistribution/legal aud
 | Apache HttpClient 5.6.5 / HttpCore 5.4.4 | Bounded media transport. Preserve notices in resolved JARs; [upstream](https://hc.apache.org/). |
 | Jackson 3.1.8 BOM | Worker/UI serialization; the core/databind family is aligned using the BOM, retaining its selected annotations version. Preserve Apache-2.0 and embedded third-party notices. |
 | Spring Boot 4.1.2 and JUnit/Mockito | Build/test scaffolding; Spring test libraries and test runners are excluded from the pilot runtime. OpenTest4J is a Playwright runtime dependency and is included. |
-| Chrome for Testing | Playwright's current `chromium` download. It is external, absent from the repository/app-image. Do not equate Chromium source licenses with permission to redistribute the complete branded Chrome binary. |
-| FFmpeg / FFprobe | External media tools. License requirements depend on the exact build/configuration; do not assume all builds have identical terms. See [FFmpeg legal information](https://ffmpeg.org/legal.html). |
+| Microsoft Edge Stable | Installed external prerequisite, launched through Playwright. No browser binaries, patches, sources, logos or runtime are redistributed in StreamBridge. |
+| FFmpeg / FFprobe | Bundled owned minimal runtime in the private installer; external media tools for source development. License requirements depend on the exact build/configuration; do not assume all builds have identical terms. See [FFmpeg legal information](https://ffmpeg.org/legal.html). |
 
 The HLS HTML fixtures use hls.js from a CDN for manual experiments; that library is
 not vendored. Generated test media uses local synthetic sources, not captured video.
@@ -30,29 +30,12 @@ or a separately reviewed alternative. Playwright's own FFmpeg helper is a differ
 binary and needs its own assessment if included. Passing tests or a clean
 top-level dependency scan does not clear bundled native libraries for release.
 
-Optional browser staging (`-PbundledChromiumDirectory=<absolute-unpacked-directory>`)
-omits `d3dcompiler_47.dll` and verifies its absence from the resulting app-image.
-The former system shader-DLL startup probe has been removed. Discovery requires
-installed Edge Stable and ignores the legacy bundled browser. These packaging
-and material notes describe the legacy private workflow pending its removal. Do not embed the original
-complete browser archive in an installer: it would still redistribute that DLL.
-This policy avoids shipping that one Microsoft binary; it does not resolve the
-separate `dxcompiler.dll`, Chromium/ANGLE, embedded FFmpeg, or other third-party
-obligations. The optional mechanism is for private validation until the complete
-native payload and corresponding materials have passed redistribution review.
-The exact candidate, collected evidence and remaining release gates are recorded
-in [Browser distribution candidate](browser-distribution.md). In particular,
-DXC has separate open-source notices; excluding the SDK DLL does not settle
-statically linked Microsoft runtime or embedded LGPL/MPL obligations.
-The [Hibbiki material review](browser/hibbiki-materials.md) tracks the remaining
-runtime/source requirements separately from the verified payload inventory.
-
 An owned [FFmpeg build recipe](../native/ffmpeg/README.md) now targets FFmpeg 9.0.2
 for Windows x64, shared libraries, LGPL-2.1-or-later configuration and no external
 codec libraries. Its source archive/hash, frozen toolchain inputs, configuration,
 licenses and generated binary inventory are retained separately from Git.
-It is a compatibility candidate; the installed launcher and release payload are
-not switched automatically. The build now retains a matching source archive,
+The private installer includes this runtime; a source build does not automatically
+replace an existing installation. The build now retains a matching source archive,
 headers/import libraries, recipe, notices and evidence under one checked manifest;
 `native/ffmpeg/Verify-Materials.ps1` checks completeness and the expected profile.
 The separate native CI builds and tests that candidate rather than substituting

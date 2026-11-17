@@ -217,8 +217,7 @@ val verifyPilotJar = tasks.register("verifyPilotJar") {
     }
 }
 tasks.named("check") { dependsOn(verifyPilotJar) }
-// Optional, explicitly supplied unpacked browser. No automatic native downloads or license acceptance.
-val bundledChromium = providers.gradleProperty("bundledChromiumDirectory")
+// Edge is an installed prerequisite. Only the media runtime may be bundled.
 val bundledMedia = providers.gradleProperty("bundledMediaDirectory")
 val mediaFiles = setOf("ffmpeg.exe", "ffprobe.exe", "avcodec-63.dll", "avfilter-12.dll",
     "avformat-63.dll", "avutil-61.dll", "swresample-7.dll", "swscale-10.dll")
@@ -241,13 +240,6 @@ val stagePilot = tasks.register<Sync>("stagePilot") {
         eachFile { path = "licenses/jna/$name" }
         includeEmptyDirs = false
     }
-    if (bundledChromium.isPresent) {
-        from("packaging/bundled-browser.required")
-        from(bundledChromium) {
-            into("native/chromium")
-            exclude { it.file.name.equals("d3dcompiler_47.dll", ignoreCase = true) }
-        }
-    }
     doFirst {
         if (bundledMedia.isPresent) {
             val source = file(bundledMedia.get())
@@ -256,23 +248,14 @@ val stagePilot = tasks.register<Sync>("stagePilot") {
                 "FFmpeg runtime must contain exactly the eight reviewed files."
             }
         }
-        if (bundledChromium.isPresent) {
-            val source = file(bundledChromium.get())
-            check(Path.of(bundledChromium.get()).isAbsolute && source.resolve("chrome.exe").isFile) { "Supply an absolute unpacked Chromium directory containing chrome.exe." }
-            check(!source.toPath().toRealPath().startsWith(layout.buildDirectory.get().asFile.toPath().toRealPath())) {
-                "Browser input must be outside the build directory."
-            }
-            check(source.walkTopDown().none { it.isFile && it.extension.lowercase() in setOf("zip", "7z", "rar", "cab", "msi", "tar", "gz", "tgz", "bz2", "xz", "zst") }) {
-                "Supply unpacked files only, not nested archives that may contain the excluded DLL."
-            }
-        }
     }
     doLast {
         for (notice in listOf("LICENSE", "AL2.0", "jna-NOTICES.txt")) {
             check(destinationDir.resolve("licenses/jna/$notice").isFile) { "Missing JNA notice: $notice" }
         }
+        check(!destinationDir.resolve("native/chromium").exists()) { "Browser payload is not supported." }
         check(destinationDir.walkTopDown().none { it.isFile && it.name.equals("d3dcompiler_47.dll", true) }) {
-            "Windows system d3dcompiler_47.dll must not be redistributed."
+            "Unexpected browser DLL in media-only package."
         }
     }
 }
@@ -310,6 +293,7 @@ tasks.register<Exec>("packageWindowsApp") {
     }
     doLast {
         val image = destination.get().asFile.resolve("StreamBridge")
+        check(!image.resolve("app/native/chromium").exists()) { "Browser payload is not supported." }
         check(image.walkTopDown().none { it.isFile && it.name.equals("d3dcompiler_47.dll", true) }) {
             "Packaged image unexpectedly includes Windows system d3dcompiler_47.dll."
         }

@@ -6,7 +6,6 @@ try {
     if (Test-Path -LiteralPath $configPath) {
         $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
         if ($config.javaHome) { $env:JAVA_HOME = $config.javaHome }
-        if ($config.chromiumDirectory) { $env:PLAYWRIGHT_BROWSERS_PATH = $config.chromiumDirectory }
         if ($config.mediaToolsDirectory) { $env:STREAMBRIDGE_FFMPEG_DIR = $config.mediaToolsDirectory }
     }
     $javaExecutable = if ($env:JAVA_HOME) { Join-Path $env:JAVA_HOME 'bin\java.exe' } else { (Get-Command java -ErrorAction Stop).Source }

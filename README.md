@@ -34,7 +34,7 @@ paywalls, CAPTCHA and access-control bypasses are outside the project scope.
 
 - Windows 11 x64 with installed **Microsoft Edge Stable** is the application target.
   Edge is required for discovery, independently of the browser chosen for the UI.
-  Discovery uses installed Edge only; the legacy private packaging option described below is still present but its browser is unused. See the
+  StreamBridge neither bundles nor downloads a browser. See the
   [installer acceptance procedure](docs/private-installer.md).
 - One operation at a time; no persistence or resume of jobs after restart.
 - Passive discovery sees requests the player actually makes, not every possible
@@ -149,15 +149,15 @@ Explicit environment variables take precedence. This is an unsigned developer
 app-image, **not the planned self-contained alpha installer**. The numeric Windows
 version is currently `0.1.0`; Gradle's development version is `0.1.0-SNAPSHOT`.
 
-The [private installer workflow](docs/private-installer.md) still accepts its legacy
-browser input in this intermediate revision. That payload is **unused**: discovery
-requires installed Edge Stable, even when an old bundle is supplied. The normal
-app-image command above does not include a browser. Browser downloading and the
-separate Windows shader-DLL startup probe have been removed.
+A separate [private installer workflow](docs/private-installer.md) bundles Java
+and the owned FFmpeg runtime in a per-user EXE installer. **Installed Edge Stable
+is the only browser prerequisite.** Discovery uses a temporary profile, never
+the user's normal Edge profile. Missing Edge or a failed protected launch produces
+an error; there is no fallback download or launch without the sandbox.
 
-Legacy private browser packaging is pending removal; do not publish its output.
-Its earlier VM acceptance does not qualify the Edge runtime. No fallback download
-or launch without the sandbox is performed.
+The installer verifies its embedded payload. Clean-Windows acceptance must be
+repeated for the new Edge-based artifact before publication. A successful test of
+an older artifact does not qualify this one.
 
 Hidden package diagnostic (use an absolute path for the report):
 

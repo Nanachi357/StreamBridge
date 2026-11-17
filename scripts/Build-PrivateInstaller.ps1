@@ -1,24 +1,21 @@
 param(
     [Parameter(Mandatory)][string]$JdkDirectory,
     [Parameter(Mandatory)][string]$WixDirectory,
-    [Parameter(Mandatory)][string]$ChromiumDirectory,
     [Parameter(Mandatory)][string]$FfmpegBundleDirectory
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
-foreach ($path in @($JdkDirectory, $WixDirectory, $ChromiumDirectory, $FfmpegBundleDirectory)) {
+foreach ($path in @($JdkDirectory, $WixDirectory, $FfmpegBundleDirectory)) {
     if (![IO.Path]::IsPathRooted($path) -or !(Test-Path -LiteralPath $path -PathType Container)) { throw 'Supply absolute existing input directories.' }
 }
 $jdk = (Resolve-Path -LiteralPath $JdkDirectory).Path
 $wix = (Resolve-Path -LiteralPath $WixDirectory).Path
-$browser = (Resolve-Path -LiteralPath $ChromiumDirectory).Path
 $media = (Resolve-Path -LiteralPath $FfmpegBundleDirectory).Path
 foreach ($file in @("$jdk/bin/jpackage.exe", "$wix/candle.exe", "$wix/light.exe", "$wix/dark.exe", "$wix/LICENSE.TXT")) {
     if (!(Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing build tool: $file" }
 }
 # Validate native inputs before executing or copying them. This is identity checking,
 # not public redistribution approval or a general-purpose signature trust service.
-& "$PSScriptRoot/Verify-FileInventory.ps1" -Root $browser -Manifest "$repo/docs/browser/hibbiki-157.0.8103.39-manifest.json"
 & "$repo/native/ffmpeg/Verify-Materials.ps1" -BundleDirectory $media
 $destination = Join-Path $repo ('backend/build/private-installer/' + [DateTime]::Now.ToString('yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0,8))
 New-Item -ItemType Directory -Path $destination | Out-Null
@@ -26,15 +23,15 @@ $oldJava = $env:JAVA_HOME; $oldPath = $env:PATH
 try {
     $env:JAVA_HOME = $jdk
     $env:PATH = "$jdk/bin;$wix;$oldPath"
-    & "$repo/backend/gradlew.bat" -p "$repo/backend" packageWindowsApp --offline --no-daemon "-PbundledChromiumDirectory=$browser" "-PbundledMediaDirectory=$media/runtime"
+    & "$repo/backend/gradlew.bat" -p "$repo/backend" packageWindowsApp --offline --no-daemon "-PbundledMediaDirectory=$media/runtime"
     if ($LASTEXITCODE -ne 0) { throw 'Application image build failed.' }
     $image = (Get-Content -LiteralPath "$repo/backend/build/windows-app/latest-path.txt" -Raw).Trim()
-    & "$PSScriptRoot/Verify-FileInventory.ps1" -Root "$image/app/native/chromium" -Manifest "$repo/docs/browser/hibbiki-157.0.8103.39-manifest.json" -IncludedOnly
     $mediaFiles = @(Get-ChildItem -LiteralPath "$media/runtime" -File | ForEach-Object {
         [ordered]@{path=$_.Name; bytes=$_.Length; sha256=(Get-FileHash -LiteralPath $_.FullName).Hash}
     })
     @{files=$mediaFiles} | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath "$destination/media-manifest.json" -Encoding utf8
     & "$PSScriptRoot/Verify-FileInventory.ps1" -Root "$image/app/native/ffmpeg" -Manifest "$destination/media-manifest.json"
+    if (Test-Path -LiteralPath "$image/app/native/chromium") { throw 'Browser payload is not supported.' }
     # Retain runtime notices without bundling compiler/source archives into the app.
     New-Item -ItemType Directory -Path "$image/app/licenses/ffmpeg" -Force | Out-Null
     Copy-Item -LiteralPath "$media/NOTICE.txt" -Destination "$image/app/licenses/ffmpeg/NOTICE.txt"
@@ -64,11 +61,11 @@ try {
     & "$PSScriptRoot/Verify-InstallerPayload.ps1" -Installer $installer -ImageManifest "$destination/image-manifest.json" -WixDirectory $wix -WorkDirectory "$destination/payload-check"
     Copy-Item -LiteralPath "$destination/payload-check/payload-manifest.json" -Destination "$destination/payload-manifest.json"
     [ordered]@{
+        browser_requirement='Installed Microsoft Edge Stable; browser not included'
         purpose='PRIVATE TEST ONLY - NOT A RELEASE'; installer=(Split-Path -Leaf $installer)
         sha256=(Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
         payload_manifest_sha256=(Get-FileHash -LiteralPath "$destination/payload-manifest.json").Hash.ToLowerInvariant()
         source_commit=(& git -C $repo rev-parse HEAD); uncommitted_changes=[bool](& git -C $repo status --porcelain)
-        browser_manifest_sha256=(Get-FileHash -LiteralPath "$repo/docs/browser/hibbiki-157.0.8103.39-manifest.json").Hash.ToLowerInvariant()
         ffmpeg_manifest_sha256=(Get-FileHash -LiteralPath "$media/SHA256SUMS").Hash.ToLowerInvariant()
         image=$image
     } | ConvertTo-Json | Set-Content -LiteralPath "$destination/build-record.json" -Encoding utf8

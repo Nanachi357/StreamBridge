@@ -6,8 +6,8 @@ This is an unsigned app-image, not an installer. Do not bypass Windows security 
 
 Microsoft Edge Stable must already be installed. Obtain it from
 https://www.microsoft.com/edge/download if absent. Discovery launches Edge with
-a temporary isolated profile; your normal browser profile is not used. No browser is downloaded. The default image includes no browser; the legacy
-private packaging option may still copy an unused browser pending its removal. Java uses Eclipse Temurin 21.0.13+9.
+a temporary isolated profile; your normal browser profile is not used. No browser
+is included or downloaded. Java uses Eclipse Temurin 21.0.13+9.
 FFmpeg/FFprobe are external in the developer app-image. Configure mediaToolsDirectory
 in %LOCALAPPDATA%/StreamBridge/pilot-launcher/tools.properties using the example,
 or set STREAMBRIDGE_FFMPEG_DIR. The private installer includes the media runtime.
