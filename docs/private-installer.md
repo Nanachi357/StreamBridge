@@ -86,8 +86,33 @@ installation/uninstallation acceptance. Public notices/source delivery remains s
 The previous private candidate used a bundled browser. Its VM results are retained
 in private historical evidence and do not qualify a different artifact.
 
-Accept the exact Edge-based artifact using the procedure above. Runtime tests
-and developer app-image checks do not replace installer acceptance.
+The Edge-based candidate was checked on 2026-11-17 in the existing Windows 11
+Enterprise Evaluation 26H2 VM (build 26300.9974), with installed Edge Stable
+157.0.4341.60 and standard user SBTester. Installer SHA-256:
+`20da37f60360ff29698911d4ad4c4ea65ff2f319a53eab443ccf9f8dbfe6012c`.
+
+| Check | Result |
+| --- | --- |
+| Remove previous app and install Edge candidate | Passed; existing output preferences and downloaded files retained. No external Java, Gradle, FFmpeg or FFprobe on PATH. |
+| First and repeated EXE self-check | Passed in about 28 and 10 seconds; absent Playwright browser cache and intentionally invalid external media path did not affect bundled tools. |
+| Installed payload and shortcuts | All 288 files matched the manifest; bundled browser absent; desktop and Start Menu shortcuts present. |
+| Discovery, preview and download | Public hls.js/Mux Big Buck Bunny sample exposed five qualities. Selected 320x184; preview 5.016 seconds, full video 634.633 seconds, H.264/AAC stereo. Both files decoded completely; first 20 compressed packets of each track matched between preview and full file. |
+| Cancellation | Discovery and active download cancelled; workers stopped, no partial media remained, completed output unchanged. |
+| Uninstall/reinstall Edge candidate | Passed; all existing tested settings and Downloads files retained. |
+| Guest reboot and EXE self-check | Passed in about 12 seconds through SSH without a new desktop login; payload and saved data unchanged. |
+
+This was a replacement/reinstallation in an existing test VM, not a restored
+pristine checkpoint. Installation ran as an interactive standard-user scheduled
+task dispatched through SSH. A direct SSH-token MSI attempt returned 1601 with
+access denied before uninstalling anything; the interactive-user attempt passed.
+No host desktop input or screen capture was used. Media checks exercised the
+installed JAR/runtime and normal authenticated API, not a rendered-UI acceptance
+test. Temporary execution-policy override was limited to private test-script
+processes; machine execution policies were not changed.
+
+Still repeat installation/startup without Internet from the clean checkpoint with
+Edge installed, and check the graphical installer and normal shortcut/UI flow for
+this candidate. Acceptance of the exact final release artifact remains required.
 
 Also verify missing Edge produces an actionable failure, with no browser download,
 personal-profile use or weaker fallback. Edge policies may prevent automation;
