@@ -229,28 +229,10 @@ class BrowserNetworkProxyTest {
 
     @Test void browserDoesNotSendWebRtcUdpOrDirectTurnTcpToOwnedLocalReceivers() throws Exception {
         assumeTrue("1".equals(System.getenv("STREAMBRIDGE_UI_BROWSER_CHECK")));
-        try(var udp=new DatagramSocket(new InetSocketAddress(loopback(),0));
-            var tcp=new ServerSocket(0,1,loopback());
-            var proxy=new BrowserNetworkProxy((h,p)->{throw new IOException("No network needed");},LIMITS);
+        try(var proxy=new BrowserNetworkProxy((h,p)->{throw new IOException("No network needed");},LIMITS);
             var playwright=Playwright.create(new Playwright.CreateOptions().setEnv(Map.of("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD","1")));
             var browser=ChromiumLaunch.launch(playwright.chromium(),true,proxy);var context=browser.newContext()) {
             var page=context.newPage();page.setContent("<title>Owned WebRTC fixture</title>");
-            Object result=page.evaluate("""
-                    async ports => {
-                      const peer=new RTCPeerConnection({iceServers:[{urls:'stun:127.0.0.1:'+ports[0]},
-                        {urls:'turn:127.0.0.1:'+ports[1]+'?transport=tcp',username:'fixture',credential:'fixture'}]});
-                      try {
-                        peer.createDataChannel('fixture');
-                        await peer.setLocalDescription(await peer.createOffer());
-                        await new Promise(resolve=>setTimeout(resolve,2500));
-                        return 'attempted';
-                      } finally { peer.close(); }
-                    }
-                    """,List.of(udp.getLocalPort(),tcp.getLocalPort()));
-            assertEquals("attempted",result);udp.setSoTimeout(300);
-            assertThrows(SocketTimeoutException.class,()->udp.receive(new DatagramPacket(new byte[2048],2048)));
-            tcp.setSoTimeout(300);
-            assertThrows(SocketTimeoutException.class,()->{try(var unexpected=tcp.accept()){fail("Direct TURN TCP bypass");}});
             LauncherDependencyProbe.verifyNoDirectWebRtc(page);
         }
     }
@@ -266,6 +248,41 @@ class BrowserNetworkProxyTest {
             assertTrue(Set.of("Chromium sent direct WebRTC UDP outside gateway",
                     "Chromium sent direct TURN TCP outside gateway").contains(failure.getMessage()),
                     failure::getMessage);
+        }
+    }
+
+    @Test void positiveControlStillDetectsTrafficWhenIceStartsAfterTheOldWindow() throws Exception {
+        assumeTrue("1".equals(System.getenv("STREAMBRIDGE_UI_BROWSER_CHECK")));
+        try(var playwright=Playwright.create(new Playwright.CreateOptions().setEnv(Map.of("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD","1")));
+            var browser=ChromiumLaunch.launch(playwright.chromium(),true);var context=browser.newContext()) {
+            var page=context.newPage();page.setContent("<title>Delayed owned WebRTC positive control</title>");
+            // Fault injection: model ICE initialization lagging behind the JS setup
+            // acknowledgement. Actual STUN/TURN traffic still comes from native WebRTC.
+            page.evaluate("""
+                    () => {
+                      const Native = window.RTCPeerConnection;
+                      window.delayedIce = {started: false, closed: false};
+                      window.RTCPeerConnection = class {
+                        constructor(config) { this.peer = new Native(config); }
+                        get iceGatheringState() { return this.peer.iceGatheringState; }
+                        get signalingState() { return this.peer.signalingState; }
+                        createDataChannel(label) { return this.peer.createDataChannel(label); }
+                        createOffer() { return this.peer.createOffer(); }
+                        setLocalDescription(description) {
+                          this.timer = setTimeout(async () => {
+                            try { await this.peer.setLocalDescription(description); delayedIce.started = true; }
+                            catch (error) { delayedIce.error = String(error); }
+                          }, 3500);
+                          return Promise.resolve();
+                        }
+                        close() { clearTimeout(this.timer); this.peer.close(); delayedIce.closed = true; }
+                      };
+                    }
+                    """);
+            var failure=assertThrows(IOException.class,()->LauncherDependencyProbe.verifyNoDirectWebRtc(page));
+            assertTrue(Set.of("Chromium sent direct WebRTC UDP outside gateway",
+                    "Chromium sent direct TURN TCP outside gateway").contains(failure.getMessage()), failure::getMessage);
+            assertEquals(true,page.evaluate("delayedIce.started && delayedIce.closed && !delayedIce.error"));
         }
     }
 

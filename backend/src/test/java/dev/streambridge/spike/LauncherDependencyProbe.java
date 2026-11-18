@@ -3,6 +3,9 @@ package dev.streambridge.spike;
 import com.microsoft.playwright.*;
 import java.io.*;
 import java.net.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.Duration;
@@ -85,33 +88,70 @@ public final class LauncherDependencyProbe {
 
     /** Behavioral check of this installed binary, not merely the presence of a command-line flag. */
     static void verifyNoDirectWebRtc(Page page) throws IOException {
+        verifyNoDirectWebRtc(page, Duration.ofMillis(2500), Duration.ofSeconds(15));
+    }
+
+    static void verifyNoDirectWebRtc(Page page, Duration minimumObservation, Duration timeout) throws IOException {
+        if (minimumObservation.isNegative() || timeout.isZero() || timeout.isNegative()
+                || timeout.compareTo(minimumObservation) < 0) throw new IllegalArgumentException("Invalid WebRTC probe budget");
         var loopback = InetAddress.getByAddress(new byte[]{127, 0, 0, 1});
-        try (var udp = new DatagramSocket(new InetSocketAddress(loopback, 0));
-             var tcp = new ServerSocket(0, 1, loopback)) {
-            Object result = page.evaluate("""
-                    async ports => {
+        try (var udp = DatagramChannel.open(); var tcp = ServerSocketChannel.open()) {
+            udp.bind(new InetSocketAddress(loopback, 0)); udp.configureBlocking(false);
+            tcp.bind(new InetSocketAddress(loopback, 0), 1); tcp.configureBlocking(false);
+            long started = System.nanoTime();
+            // setLocalDescription does not mean ICE has finished. Keep the peer and
+            // receivers alive until completion, observing real traffic while ICE runs.
+            var probe = page.evaluateHandle("""
+                    ports => {
                       const peer = new RTCPeerConnection({iceServers: [
                         {urls: 'stun:127.0.0.1:' + ports[0]},
                         {urls: 'turn:127.0.0.1:' + ports[1] + '?transport=tcp',
                          username: 'fixture', credential: 'fixture'}]});
-                      try {
-                        peer.createDataChannel('fixture');
-                        await peer.setLocalDescription(await peer.createOffer());
-                        await new Promise(resolve => setTimeout(resolve, 2500));
-                        return 'attempted';
-                      } finally { peer.close(); }
+                      const probe = {peer, started: false, error: null};
+                      (async () => {
+                        try {
+                          peer.createDataChannel('fixture');
+                          await peer.setLocalDescription(await peer.createOffer());
+                          probe.started = true;
+                        } catch (error) { probe.error = String(error); }
+                      })();
+                      return probe;
                     }
-                    """, List.of(udp.getLocalPort(), tcp.getLocalPort()));
-            if (!"attempted".equals(result)) throw new IOException("WebRTC receiver check incomplete");
-            udp.setSoTimeout(300);
+                    """, List.of(((InetSocketAddress) udp.getLocalAddress()).getPort(),
+                            ((InetSocketAddress) tcp.getLocalAddress()).getPort()));
             try {
-                udp.receive(new DatagramPacket(new byte[2048], 2048));
-                throw new IOException("Chromium sent direct WebRTC UDP outside gateway");
-            } catch (SocketTimeoutException expected) { }
-            tcp.setSoTimeout(300);
-            try (var unexpected = tcp.accept()) {
-                throw new IOException("Chromium sent direct TURN TCP outside gateway");
-            } catch (SocketTimeoutException expected) { }
+                var packet = ByteBuffer.allocate(2048);
+                long completedAt = -1;
+                long observationStartedAt = -1;
+                while (true) {
+                    Object state = probe.evaluate("p => ({started: p.started, gathering: p.peer.iceGatheringState, closed: p.peer.signalingState === 'closed', error: p.error})");
+                    // Read AFTER the browser state: a packet sent just before completion
+                    // must still fail the check. A detected leak takes priority over timeout.
+                    if (udp.receive(packet) != null) throw new IOException("Chromium sent direct WebRTC UDP outside gateway");
+                    try (var unexpected = tcp.accept()) {
+                        if (unexpected != null) throw new IOException("Chromium sent direct TURN TCP outside gateway");
+                    }
+                    long elapsed = System.nanoTime() - started;
+                    if (!(state instanceof Map<?, ?> details) || details.get("error") != null
+                            || Boolean.TRUE.equals(details.get("closed")))
+                        throw new IOException("WebRTC receiver check incomplete: " + state);
+                    if (elapsed >= timeout.toNanos())
+                        throw new IOException("WebRTC receiver check timed out: " + state);
+                    if (Boolean.TRUE.equals(details.get("started")) && observationStartedAt < 0)
+                        observationStartedAt = elapsed;
+                    if (Boolean.TRUE.equals(details.get("started")) && "complete".equals(details.get("gathering"))) {
+                        if (completedAt < 0) completedAt = elapsed;
+                        // Preserve the old two 300-ms receiver waits, with the peer
+                        // still open, to drain traffic queued just before completion.
+                        if (elapsed - observationStartedAt >= minimumObservation.toNanos()
+                                && elapsed - completedAt >= Duration.ofMillis(600).toNanos()) return;
+                    } else completedAt = -1;
+                    page.waitForTimeout(25); // Dispatch Playwright/browser events; do not block with Thread.sleep.
+                }
+            } finally {
+                try { probe.evaluate("p => p.peer.close()"); }
+                finally { probe.dispose(); }
+            }
         }
     }
 

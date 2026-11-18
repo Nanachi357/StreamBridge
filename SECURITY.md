@@ -39,6 +39,16 @@ bypass. Startup also checks direct WebRTC against owned local receivers and refu
 to continue on failure. Re-run these behavioral checks for every Chromium update:
 accepting a launch flag alone is not evidence that it works.
 
+The startup WebRTC probe keeps its peer and both receivers open while ICE gathers
+candidates. A clean result requires successful offer setup, completed ICE gathering,
+at least 2.5 seconds of observation and a 600-ms drain after completion. Direct
+UDP/TURN TCP traffic fails immediately. A responsive probe has a 15-second budget;
+unfinished gathering, script errors or an unexpected peer close fail startup,
+rather than treating silence as proof of protection. The outer dependency-process
+deadline also covers an unresponsive browser. Tests retain an unrestricted browser
+positive control and inject delayed ICE initialization beyond the old fixed window.
+These are bounded behavioral checks, not a proof against every possible late packet.
+
 The gateway bounds concurrent sessions to 64 (not discovered playlists), handshake
 time to 10 seconds, individual connects to 5 seconds and directional read inactivity
 to 60 seconds. Shutdown closes active tunnels; delayed DNS cannot initiate a new
