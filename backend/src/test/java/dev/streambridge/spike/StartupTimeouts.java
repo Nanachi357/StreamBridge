@@ -10,6 +10,9 @@ final class StartupTimeouts {
     // The owned loopback self-check also initializes the HTTP library on a cold JVM.
     // Its connect/read limits stay short; this is not a public download timeout.
     static final Duration HTTP_TRANSPORT = Duration.ofSeconds(60);
+    static final Duration DISCOVERY_STARTUP = Duration.ofMinutes(4);
+    // Parent covers child JVM startup as well, before the child's own guard exists.
+    static final Duration DISCOVERY_SUPERVISION = DISCOVERY_STARTUP.plusSeconds(60);
     // Two media probes + browser launch, with room for driver
     // extraction, page verification and cleanup. The child remains bounded even
     // when native process creation or a library call does not honor its own timeout.

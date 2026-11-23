@@ -37,10 +37,27 @@ public final class RealDiscoverySpike {
     private final Map<Integer, List<String>> nodeSignatures = new HashMap<>();
     private final Map<Integer, Frame> nodeFrames = new HashMap<>();
     private long manifestBodies;
+    private long startupStarted;
     private static final String CONTROLS = "button,[role=button],a[href^='#'],.vjs-big-play-button,.jw-icon-playback,.plyr__control[data-plyr=play],[class~='play'],[class*='play_button'],[class*='play-button'],[class*='playbutton']";
     private static final String PLAYER_NODES = "iframe,[class*='play'],[id*='play'],[data-src],[data-file],[data-player],select,[onclick]";
 
     public static void main(String[] args) throws Exception { new RealDiscoverySpike().run(args); }
+
+    private void startupStage(String stage) {
+        log("STARTUP stage=" + stage + " elapsedMs=" + Duration.ofNanos(System.nanoTime() - startupStarted).toMillis());
+    }
+    private Playwright startPlaywright() {
+        startupStage("driver-start");
+        var playwright = Playwright.create(new Playwright.CreateOptions().setEnv(Map.of("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1")));
+        startupStage("driver-ready");
+        return playwright;
+    }
+    private Browser startBrowser(Playwright playwright, BrowserNetworkProxy network) {
+        startupStage("browser-start");
+        var browser = ChromiumLaunch.launch(playwright.chromium(), false, network);
+        startupStage("browser-ready");
+        return browser;
+    }
 
     private void run(String[] args) throws Exception {
         URI target = null;
@@ -96,19 +113,23 @@ public final class RealDiscoverySpike {
         String endReason = "DISCOVERY_WINDOW_ENDED";
         var lifecycleRef = new DiscoveryPageLifecycle[1];
         var browserRef = new Browser[1];
+        startupStarted = System.nanoTime();
+        Runnable onStartupTimeout = () -> { event("error", "DISCOVERY_STARTUP_TIMEOUT");log("STARTUP_DEADLINE: stopping owned processes; exit=124"); };
         Runnable onUnresponsive = () -> { event("error", "DISCOVERY_WORKER_UNRESPONSIVE");log("HARD_DEADLINE: stopping owned processes; exit=124"); };
-        try (var deadlineGuard = observeMs == 0
-                     ? DiagnosticDeadline.inactivityOnly(Duration.ofSeconds(45), onUnresponsive)
-                     : new DiagnosticDeadline(Duration.ofMillis(observeMs + 45_000L), Duration.ofSeconds(45), onUnresponsive);
+        try (var deadlineGuard = DiagnosticDeadline.starting(StartupTimeouts.DISCOVERY_STARTUP,
+                     observeMs == 0 ? Duration.ZERO : Duration.ofMillis(observeMs + 45_000L),
+                     Duration.ofSeconds(45), onStartupTimeout, onUnresponsive);
              var network = new BrowserNetworkProxy();
-             var playwright = Playwright.create(new Playwright.CreateOptions().setEnv(Map.of("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1")));
-             var browser = ChromiumLaunch.launch(playwright.chromium(), false, network);
+             var playwright = startPlaywright();
+             var browser = startBrowser(playwright, network);
              var context = browser.newContext(new Browser.NewContextOptions().setAcceptDownloads(false)
                      .setServiceWorkers(ServiceWorkerPolicy.BLOCK))) {
             context.setDefaultTimeout(3000);
             browserRef[0] = browser;
-            var activity = new DiscoveryActivity(System.nanoTime(), observeMs);
             Page page = context.newPage();
+            deadlineGuard.beginObservation();
+            startupStage("page-ready");
+            var activity = new DiscoveryActivity(System.nanoTime(), observeMs);
             var lifecycle = new DiscoveryPageLifecycle(page, activity);
             lifecycleRef[0] = lifecycle;
             try {

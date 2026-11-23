@@ -111,8 +111,8 @@ final class LocalUiSession implements AutoCloseable {
             Thread.ofVirtual().name("ui-worker-output").start(() -> { try { consume(own); } finally { finished.countDown(); } });
             // Covers startup DNS/native launch hangs before the worker's own browser watchdog exists.
             Thread.ofVirtual().start(() -> {
-                try { Thread.sleep(45_000); synchronized (this) {
-                    if (process == own && own.isAlive() && phase.equals("STARTING")) { error = "STARTUP_TIMEOUT"; cancel(); }
+                try { Thread.sleep(StartupTimeouts.DISCOVERY_SUPERVISION.toMillis()); synchronized (this) {
+                    if (process == own && own.isAlive() && phase.equals("STARTING")) { error = "DISCOVERY_STARTUP_TIMEOUT"; cancel(); }
                 }} catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
             });
         } catch (IOException failure) { status = "FAILED"; phase = "FINISHED"; error = "WORKER_START_FAILED"; changed(); throw failure; }

@@ -87,6 +87,17 @@ HTTP-library initialization, while connect/read limits remain two seconds, with 
 single request and a 32-byte response cap. Its report records the failing stage and
 elapsed time. Allow six minutes for the complete packaged self-check externally.
 
+Discovery has its own four-minute initialization deadline for driver/browser/page
+creation. Only after the page exists does the 45-second responsiveness watchdog
+and any explicitly requested observation budget begin. Startup pulses cannot extend
+the initialization deadline. Unlimited UI observation still has no overall time
+limit after startup; an unresponsive worker remains bounded. Startup timeout is
+reported as `DISCOVERY_STARTUP_TIMEOUT`, separately from a stalled running worker.
+The UI supervisor allows an additional minute for child-JVM initialization before
+that watchdog exists. Explicit cancellation retains its separate 15-second forced
+cleanup fallback; it does not wait for the startup budget to expire.
+These startup budgets do not increase public media-request or preview limits.
+
 The unsigned private package and any security prompts must be recorded accurately.
 Developer app-image self-check is useful before VM testing but is not clean-machine
 installation/uninstallation acceptance. Public notices/source delivery remains separate from this private functionality test.

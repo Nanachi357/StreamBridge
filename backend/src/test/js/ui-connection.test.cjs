@@ -161,6 +161,16 @@ test('browser launch failure explains the required sandbox without claiming it c
  assert.equal(f.element('prepare').disabled,true);
 });
 
+test('startup timeout is distinguished from a stalled running discovery',async()=>{
+ const f=fixture('#valid');await tick();
+ Object.assign(f.state,{phase:'FINISHED',status:'FAILED',error:'DISCOVERY_STARTUP_TIMEOUT',workerAlive:false});f.emit();
+ assert.match(f.element('error').textContent,/Підготовка браузера/);
+ assert.match(f.element('error').textContent,/4 хвилини/);
+ assert.doesNotMatch(f.element('error').textContent,/45 с/);
+ f.state.error='DISCOVERY_WORKER_UNRESPONSIVE';f.emit();
+ assert.match(f.element('error').textContent,/45 с/);
+});
+
 test('different observed variant durations are shown as a range, not a fabricated single duration',async()=>{
  const f=fixture('#valid');await tick();const catalog=catalogFixture();catalog.candidates[0].variants[1].durationSeconds=1450;
  Object.assign(f.state,{phase:'DISCOVERING',catalog});f.emit();assert.match(treeText(f.element('source-cards').children[0]),/24:04–24:10.*2\/2/);
