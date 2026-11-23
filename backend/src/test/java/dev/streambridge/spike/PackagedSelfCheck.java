@@ -20,13 +20,19 @@ final class PackagedSelfCheck {
         report.put("applicationLocation", Path.of(LocalUiLauncher.class.getProtectionDomain().getCodeSource().getLocation().toURI()).toString());
         int exit = 1;
         Path root = null;
+        long started = System.nanoTime();
         try {
             if (Runtime.version().feature() != 21) throw new IllegalStateException("Expected Java 21");
+            report.put("stage", "HTTP_TRANSPORT");
             verifyHttpTransport();
             report.put("boundedHttpTransport", "OK");
+            report.put("httpTransportElapsedMs", Duration.ofNanos(System.nanoTime() - started).toMillis());
+            report.put("stage", "DOWNLOADS_DIRECTORY");
             report.put("downloadsDirectory", OutputFiles.downloads().toString());
+            report.put("stage", "DEPENDENCIES");
             LauncherSupport.probeDependencies();
             report.put("dependenciesAndChildJava", "OK");
+            report.put("stage", "LOCAL_API");
             Class.forName(RealDiscoverySpike.class.getName());
             root = Files.createTempDirectory("streambridge-package-check-");
             try (var app = new LocalUiSpike(new LocalUiSession(root));
@@ -38,10 +44,11 @@ final class PackagedSelfCheck {
                     if (response.statusCode() != 200 || response.body().isBlank()) throw new IllegalStateException("Missing UI resource: "+resource);
                 }
             }
-            report.put("localApiAndUiResources", "OK"); report.put("success", true); exit = 0;
+            report.put("localApiAndUiResources", "OK"); report.put("stage", "COMPLETE"); report.put("success", true); exit = 0;
         } catch (Exception failure) {
             report.put("success", false); report.put("error", failure.getClass().getSimpleName()+": "+failure.getMessage());
         } finally {
+            report.put("elapsedMs", Duration.ofNanos(System.nanoTime() - started).toMillis());
             if (root != null) Files.deleteIfExists(root); // Empty directory created by this check only.
             Files.createDirectories(destination.getParent());
             Files.writeString(destination, UiProtocol.json(report));
@@ -70,7 +77,7 @@ final class PackagedSelfCheck {
                 return new InetAddress[]{loopback};
             })) {
                 var resource = fetcher.fetch(uri, new BoundedResourceFetcher.Limits(32, 0,
-                        Duration.ofSeconds(5), Duration.ofSeconds(2), Duration.ofSeconds(2)),
+                        StartupTimeouts.HTTP_TRANSPORT, Duration.ofSeconds(2), Duration.ofSeconds(2)),
                         new BoundedResourceFetcher.RequestBudget(1));
                 if (!uri.equals(resource.finalUri()) || !Arrays.equals(expected, resource.bytes()))
                     throw new IllegalStateException("HTTP transport fixture mismatch");

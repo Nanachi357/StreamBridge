@@ -82,6 +82,11 @@ waits, not mandatory delays. Logs record native process-creation time and driver
 browser and page stages. Timeouts are reported separately from missing/broken tools;
 they do not by themselves establish corruption or an antivirus problem. Preserve
 the original failure logs when repeating tests after reinstall or checkpoint restore.
+The owned loopback HTTP self-check has a separate 60-second total budget for cold
+HTTP-library initialization, while connect/read limits remain two seconds, with a
+single request and a 32-byte response cap. Its report records the failing stage and
+elapsed time. Allow six minutes for the complete packaged self-check externally.
+
 The unsigned private package and any security prompts must be recorded accurately.
 Developer app-image self-check is useful before VM testing but is not clean-machine
 installation/uninstallation acceptance. Public notices/source delivery remains separate from this private functionality test.
