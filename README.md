@@ -159,6 +159,10 @@ The installer verifies its embedded payload. Clean-Windows acceptance must be
 repeated for the new Edge-based artifact before publication. A successful test of
 an older artifact does not qualify this one.
 
+The [alpha candidate packaging procedure](docs/alpha-release.md) prepares the
+public installation identity and companion source/material files locally. It does
+not publish a release; final artifact acceptance and publication remain separate.
+
 Hidden package diagnostic (use an absolute path for the report):
 
 ```powershell

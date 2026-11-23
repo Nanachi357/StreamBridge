@@ -1,0 +1,30 @@
+Matching Java materials for StreamBridge 0.1.0-alpha.1
+
+Runtime input: Eclipse Temurin 21.0.13+9, Windows x64 HotSpot JDK ZIP
+https://github.com/adoptium/temurin21-binaries/releases/tag/jdk-21.0.13%2B9
+ZIP SHA-256: a4dbaa05fca4bd89d84584e58c459bd732efebb1722af80ab13c6516832004f9
+
+This archive includes the upstream full OpenJDK source release (native and Java
+sources, build scripts and license notices), not just the JDK's lib/src.zip.
+OpenJDK21U-jdk-sources_21.0.13_9.tar.gz is the release's source asset.
+temurin-build.json is the unmodified metadata for the exact Windows binary ZIP;
+its upstream build-machine paths are provenance, not StreamBridge user data.
+It records configure arguments, the build environment and OpenJDK source revision
+2ab10ca20c191701c3a9f3153bfc6e93d63714c1. The accompanying Temurin build scripts
+are at the metadata's buildRef, 1cf43d7a3e77886bfea7d550a902e151a87d724d:
+https://github.com/adoptium/temurin-build/tree/1cf43d7a3e77886bfea7d550a902e151a87d724d
+
+Read the source and build-script documentation for upstream build prerequisites.
+Upstream Windows compilation uses its recorded Cygwin/Visual Studio/devkit setup;
+these build tools are not needed to install StreamBridge. This material set does
+not claim that we rebuilt Temurin or established byte-for-byte reproducibility.
+
+StreamBridge does not patch OpenJDK sources. packageWindowsApp in the included
+streambridge-build.gradle.kts invokes jpackage/jlink from the pinned JDK, with:
+  modules: java.se,jdk.httpserver,jdk.crypto.ec,jdk.unsupported,jdk.charsets,
+           jdk.zipfs,jdk.net
+  jlink: --strip-debug --no-man-pages --no-header-files
+It retains native executables and runtime/legal. For the full application build,
+use the matching StreamBridge commit recorded in release-manifest.json and its
+Gradle wrapper/settings, following docs/alpha-release.md. Source licensing remains
+GPLv2 with Classpath Exception and the original component-specific notices.

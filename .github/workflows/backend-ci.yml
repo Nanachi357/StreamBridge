@@ -77,6 +77,9 @@ jobs:
           ./scripts/Test-InstallerProfile.ps1
           powershell.exe -NoProfile -File ./scripts/Test-InstallerProfile.ps1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./scripts/Test-AlphaPackaging.ps1
+          powershell.exe -NoProfile -File ./scripts/Test-AlphaPackaging.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Install pinned media tools for owned fixtures
         run: |
           $ErrorActionPreference = 'Stop'
