@@ -2,7 +2,9 @@ param(
     [Parameter(Mandatory)][string]$Installer,
     [Parameter(Mandatory)][string]$ImageManifest,
     [Parameter(Mandatory)][string]$WixDirectory,
-    [Parameter(Mandatory)][string]$WorkDirectory
+    [Parameter(Mandatory)][string]$WorkDirectory,
+    [ValidateSet('StreamBridge Private Alpha','StreamBridge App')][string]$InstallDirectory = 'StreamBridge Private Alpha',
+    [string]$ExpectedUpgradeCode = ''
 )
 $ErrorActionPreference = 'Stop'
 # For our freshly built installer, not an arbitrary hostile MSI. Data-file loading
@@ -53,7 +55,10 @@ $ns.AddNamespace('w','http://schemas.microsoft.com/wix/2006/wi')
 $package = $xml.SelectSingleNode('/w:Wix/w:Product/w:Package',$ns)
 if ($package.InstallPrivileges -ne 'limited') { throw 'Installer requires elevated privileges.' }
 $install = $xml.SelectSingleNode('//w:Directory[@Id="INSTALLDIR"]',$ns)
-if ($null -eq $install -or $install.ParentNode.Id -ne 'LocalAppDataFolder' -or $install.Name -ne 'StreamBridge Private Alpha') { throw 'Unexpected installation directory.' }
+if ($null -eq $install -or $install.ParentNode.Id -ne 'LocalAppDataFolder' -or $install.Name -ne $InstallDirectory) { throw 'Unexpected installation directory.' }
+$product = $xml.SelectSingleNode('/w:Wix/w:Product',$ns)
+if ($ExpectedUpgradeCode -and [guid]$product.UpgradeCode -ne [guid]$ExpectedUpgradeCode) { throw 'Unexpected upgrade identity.' }
+if ($product.Version -ne '0.1.0' -or $product.Manufacturer -ne 'Vladyslav Ponomarenko') { throw 'Unexpected product identity.' }
 $expected = [Collections.Generic.Dictionary[string,object]]::new([StringComparer]::OrdinalIgnoreCase)
 foreach ($entry in (Get-Content -LiteralPath $ImageManifest -Raw | ConvertFrom-Json).files) { $expected.Add($entry.path,$entry) }
 if (!$expected.Remove('app/.jpackage.xml')) { throw 'Missing jpackage image metadata.' }
@@ -81,6 +86,6 @@ foreach ($file in $install.SelectNodes('.//w:File',$ns)) {
     Copy-Item -LiteralPath $source -Destination $target
 }
 if ($found.Count -ne $expected.Count -or $xml.SelectNodes('//w:File',$ns).Count -ne $expected.Count) { throw 'Installer file inventory differs.' }
-@{schema_version=1; purpose='PRIVATE TEST ONLY - NOT A RELEASE'; files=@($expected.Values | Sort-Object path)} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$work/payload-manifest.json" -Encoding utf8
+@{schema_version=1; purpose='Installed payload verification; not publication approval'; files=@($expected.Values | Sort-Object path)} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$work/payload-manifest.json" -Encoding utf8
 & "$PSScriptRoot/Verify-FileInventory.ps1" -Root "$work/installed-image" -Manifest "$work/payload-manifest.json"
 Write-Output 'PASS: embedded MSI, per-user scope and exact installed payload verified without installation.'

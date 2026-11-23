@@ -1,0 +1,34 @@
+StreamBridge 0.1.0-alpha.1 - experimental Windows 11 x64 application
+Vladyslav Ponomarenko (Nanachi357)
+https://github.com/Nanachi357/StreamBridge
+
+Java and FFmpeg are included. No Java, Gradle, Node.js or FFmpeg installation is
+needed. Microsoft Edge Stable must already be installed for discovery:
+https://www.microsoft.com/edge/download
+StreamBridge does not include, download or update Edge. Discovery uses a separate
+temporary Edge profile, not your personal browser profile. Your default/chosen
+browser opens the application's local interface.
+
+Install for the current user. Open StreamBridge from the desktop or Start Menu.
+Open a video page, start its player, select a source/quality/audio, optionally
+preview, then confirm the download. Downloads is the default destination; another
+selected folder is remembered. Use Finish StreamBridge to stop the application.
+
+This unsigned alpha has no automatic updater or job recovery after restart.
+Supported media: a limited subset of finite, unencrypted HLS with MPEG-TS segments.
+YouTube/DASH, DRM, compressed manifests and some HLS features are unsupported.
+Only save content you own or are authorized to save. See the release notes and
+repository README for limits. Do not disable Windows protections to run the app.
+
+Uninstall using Windows Settings > Apps. Completed videos, preferences and
+diagnostics in your user profile are retained. Do not save videos in the install
+directory. Close StreamBridge before installing an update.
+
+StreamBridge's MIT LICENSE covers its own code. Third-party terms remain separate:
+runtime/legal, app/licenses, original JAR notices and THIRD-PARTY.txt. Compatible
+FFmpeg DLL replacement is permitted; original hashes are not enforced at startup.
+Matching source/build materials accompany the installer release at:
+https://github.com/Nanachi357/StreamBridge/releases/tag/v0.1.0-alpha.1
+In a local unpublished candidate this page/assets may not exist yet. Retain the
+matching materials beside any published binary; source downloads are optional for
+ordinary use. This file does not certify release acceptance or publication approval.

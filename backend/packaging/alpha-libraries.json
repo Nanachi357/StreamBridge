@@ -1,0 +1,85 @@
+{
+  "purpose": "Exact alpha.1 runtime libraries corresponding to THIRD-PARTY.txt; update together on dependency changes",
+  "files": [
+    {
+      "path": "driver-1.64.0.jar",
+      "bytes": 3247347,
+      "sha256": "116badd0cfc74d85bc58fef74fe492e63da72035d4ec8569ad88188332b839c5"
+    },
+    {
+      "path": "driver-bundle-1.64.0.jar",
+      "bytes": 204614104,
+      "sha256": "c04dce9bd95e758c2c5784dfb9b508ba8f4b7601aa1a4f738ae269e5c0bd49a9"
+    },
+    {
+      "path": "error_prone_annotations-2.41.0.jar",
+      "bytes": 20389,
+      "sha256": "a56e782b5b50811ac204073a355a21d915a2107fce13ec711331ad036f660fcc"
+    },
+    {
+      "path": "gson-2.13.2.jar",
+      "bytes": 289901,
+      "sha256": "dd0ce1b55a3ed2080cb70f9c655850cda86c206862310009dcb5e5c95265a5e0"
+    },
+    {
+      "path": "httpclient5-5.6.5.jar",
+      "bytes": 1059031,
+      "sha256": "a10b555f7c85a720d1011a086d679d854b155816cde91a40198cc98c2b0867e8"
+    },
+    {
+      "path": "httpcore5-5.4.4.jar",
+      "bytes": 955270,
+      "sha256": "b08e3c3a440fec2029e89980134c7c787dd6796454641ad1eafb81478d7e8b0b"
+    },
+    {
+      "path": "httpcore5-h2-5.4.4.jar",
+      "bytes": 263674,
+      "sha256": "9a61441889f9b222ce99581977cc549b4dfca7ac9d2841582c1e57a31fa65b48"
+    },
+    {
+      "path": "jackson-annotations-2.21.jar",
+      "bytes": 82104,
+      "sha256": "53ca085f4a150f703f49e1aabd935bd03b43e1ea3d55d135438292af22cef56b"
+    },
+    {
+      "path": "jackson-core-3.1.8.jar",
+      "bytes": 606159,
+      "sha256": "762caa009970e8c35527fcc2cfbde50afed0d6a195ee4a7fac22d80fea72c471"
+    },
+    {
+      "path": "jackson-databind-3.1.8.jar",
+      "bytes": 1958993,
+      "sha256": "2e7583c96f3eaf11591a727c75278b25a0f1227d29a7c5e8306f252f441bfb58"
+    },
+    {
+      "path": "jna-5.19.1.jar",
+      "bytes": 1950853,
+      "sha256": "4fb141dd8ef6b0585ffceea4bc49602fbc6312fa977e2c488794ea3e6aafecae"
+    },
+    {
+      "path": "jna-platform-5.19.1.jar",
+      "bytes": 1416385,
+      "sha256": "3b3864f5b449e9c3c24b16861524b622b086563f44e0cd8384c8efc5a6052f82"
+    },
+    {
+      "path": "jspecify-1.0.1.jar",
+      "bytes": 3064,
+      "sha256": "070d75f261fe4c5b8202508366715f7f2d4660f88c8ef7e6d3575e48c9683b66"
+    },
+    {
+      "path": "opentest4j-1.3.0.jar",
+      "bytes": 14304,
+      "sha256": "48e2df636cab6563ced64dcdff8abb2355627cb236ef0bf37598682ddf742f1b"
+    },
+    {
+      "path": "playwright-1.64.0.jar",
+      "bytes": 684980,
+      "sha256": "b4a40f4af4b8e0b8aec0b461c2f475aed6a5e6693bdbf65de2fee6d31cd17c7b"
+    },
+    {
+      "path": "slf4j-api-2.0.20.jar",
+      "bytes": 70255,
+      "sha256": "7e1446499b359675d8aabe6af2de86b85e72ae8a2a932c0b40d0e5ba57097439"
+    }
+  ]
+}

@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "dev.streambridge"
-version = "0.1.0-SNAPSHOT"
+version = providers.gradleProperty("releaseVersion").orElse("0.1.0-SNAPSHOT").get()
 
 // Keep the Jackson 3.1 family aligned, including security fixes after Boot's BOM.
 extra["jackson-bom.version"] = "3.1.8"
@@ -172,12 +172,14 @@ dependencies {
 }
 val pilotLibraries = configurations.named(pilot.runtimeClasspathConfigurationName)
 val pilotJar = tasks.register<Jar>("pilotJar") {
+    inputs.property("releaseVersion", project.version.toString())
     archiveFileName.set("streambridge.jar")
     destinationDirectory.set(layout.buildDirectory.dir("pilot-jar"))
     from(pilot.output)
     doFirst {
         manifest.attributes(
             "Main-Class" to "dev.streambridge.spike.LocalUiLauncher",
+            "Implementation-Version" to project.version.toString(),
             "Class-Path" to pilotLibraries.get().files.sortedBy { it.name }.joinToString(" ") { "lib/${it.name}" }
         )
     }

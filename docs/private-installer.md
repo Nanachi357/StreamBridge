@@ -5,6 +5,11 @@ after acceptance of the exact artifact and delivery of included components' noti
 and matching source materials. **Microsoft Edge Stable is an external prerequisite**;
 StreamBridge does not include a browser or a browser installer.
 
+`Build-AlphaInstaller.ps1` uses the same payload checks with a distinct public
+installation identity, explicitly marked as an unpublished candidate. Its default
+requires a clean checkout; `-AllowUncommitted` is only for local preparation. The
+private profile, existing upgrade identity and output location remain unchanged.
+
 ## Build
 
 On Windows x64, provide the pinned Temurin 21.0.13+9 JDK, unpacked WiX 3.14.1 build
