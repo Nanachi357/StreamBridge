@@ -4,8 +4,8 @@ Run StreamBridge.exe. Keep this entire folder together: app/ and runtime/ are re
 Java is included. Neither a system Java installation nor Gradle is needed to run it.
 This is an unsigned app-image, not an installer. Do not bypass Windows security warnings.
 
-Microsoft Edge Stable must already be installed. Obtain it from
-https://www.microsoft.com/edge/download if absent. Discovery launches Edge with
+Google Chrome Stable or Microsoft Edge Stable must already be installed. Obtain them from
+https://www.google.com/chrome/ or https://www.microsoft.com/edge/download if absent. Discovery uses the UI browser with
 a temporary isolated profile; your normal browser profile is not used. No browser
 is included or downloaded. Java uses Eclipse Temurin 21.0.13+9.
 FFmpeg/FFprobe are external in the developer app-image. Configure mediaToolsDirectory
@@ -44,7 +44,7 @@ the page's memory use inside Chromium.
 
 No-window diagnostic (run with an absolute destination for the private JSON report):
   StreamBridge.exe --self-check=C:\Temp\streambridge-check.json
-This checks bundled Java child execution, tools, a static headless Edge page,
+This checks bundled Java child execution, tools, a static headless page in an available browser,
 the browser's direct WebRTC isolation against owned local UDP/TCP receivers,
 packaged web resources, authenticated local HTTP readiness, acquisition HTTP
 transport and Downloads lookup. No video site is

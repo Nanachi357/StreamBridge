@@ -1,8 +1,8 @@
 # Alpha.1 candidate packaging
 
 This procedure prepares **local, unpublished** `v0.1.0-alpha.1` candidates for
-Windows 11 x64. It does not create a tag, release, upload or installation. Edge
-Stable is required on the recipient's machine; Java and the owned minimal FFmpeg
+Windows 11 x64. It does not create a tag, release, upload or installation. Chrome
+Stable or Edge Stable is required on the recipient's machine; Java and the owned minimal FFmpeg
 runtime are included. Browser redistribution is outside this package.
 
 ## Installer
@@ -82,10 +82,11 @@ artifacts. The installed README and THIRD-PARTY.txt point at the same release pa
 2. Verify the final checksums, notices/material contents and absence of personal
    data. Upload only the explicitly reviewed `release-files` contents, never the
    whole build directory, private build record, test logs or VM evidence.
-3. Restore the clean Windows checkpoint with Edge installed. Test standard-user
+3. Restore the clean Windows checkpoint with a supported browser installed. Test standard-user
    offline installation and **first** startup. Then test online discovery,
    preview/download/cancellation, saved folder, reboot, uninstall/reinstall and
-   preservation of existing user data. Record exact installer hash and Edge version.
+   preservation of existing user data. Verify discovery in both Chrome and Edge.
+   Record the exact installer hash and browser versions.
 4. Check the graphical installer and shortcut/UI flow. Keep Defender/OS protections
    enabled; document actual prompts for the unsigned EXE. Use the
    [existing acceptance steps](private-installer.md#acceptance-on-a-clean-vm).

@@ -61,7 +61,7 @@ $files = @(Get-ChildItem -LiteralPath $assets -File | Sort-Object Name | ForEach
     release=$profile.label; source_commit=$record.source_commit; uncommitted_changes=$record.uncommitted_changes
     windows_version=$profile.version; upgrade_code=$profile.upgradeCode
     status='CANDIDATE - requires exact-artifact VM acceptance and explicit publication decision'
-    browser='Installed Microsoft Edge Stable (not bundled)'; files=$files
+    browser='Installed Google Chrome Stable or Microsoft Edge Stable (not bundled)'; files=$files
 } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$assets/release-manifest.json" -Encoding utf8
 Get-ChildItem -LiteralPath $assets -File | Sort-Object Name | ForEach-Object {
     '{0}  {1}' -f (Get-FileHash -LiteralPath $_.FullName).Hash.ToLowerInvariant(), $_.Name

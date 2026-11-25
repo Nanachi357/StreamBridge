@@ -81,7 +81,7 @@ try {
         $installer = Join-Path $destination $settings.asset
     }
     [ordered]@{
-        browser_requirement='Installed Microsoft Edge Stable; browser not included'
+        browser_requirement='Installed Google Chrome Stable or Microsoft Edge Stable; browser not included'
         purpose=$settings.purpose; release=$settings.label; installer=(Split-Path -Leaf $installer)
         sha256=(Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
         payload_manifest_sha256=(Get-FileHash -LiteralPath "$destination/payload-manifest.json").Hash.ToLowerInvariant()

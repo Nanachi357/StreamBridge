@@ -2,7 +2,7 @@
 
 This workflow creates a private test installer. Publication is a separate step
 after acceptance of the exact artifact and delivery of included components' notices
-and matching source materials. **Microsoft Edge Stable is an external prerequisite**;
+and matching source materials. **Google Chrome Stable or Microsoft Edge Stable is an external prerequisite**;
 StreamBridge does not include a browser or a browser installer.
 
 `Build-AlphaInstaller.ps1` uses the same payload checks with a distinct public
@@ -54,7 +54,7 @@ acceptance step for the original artifact, not a restriction on modification.
 
 ## Acceptance on a clean VM
 
-Use a supported Windows 11 x64 image with installed Edge Stable, a standard user, no development tools,
+Use a supported Windows 11 x64 image with installed Chrome or Edge Stable, a standard user, no development tools,
 and a checkpoint before installing. Do not share the checkout, user profiles,
 developer caches or personal configuration with the guest.
 
@@ -64,7 +64,7 @@ developer caches or personal configuration with the guest.
 2. Compare installed files against `payload-manifest.json` using
    `scripts/Verify-FileInventory.ps1`. Run the installed EXE with
    `--self-check=C:\Users\TestUser\Desktop\self-check.json` and inspect its result.
-3. With Edge already installed and networking disabled, verify installation and startup need no downloads.
+3. With a supported browser already installed and networking disabled, verify installation and startup need no downloads.
    Enable networking for the media checks; normal network restrictions stay enabled.
 4. Discover an owned supported stream, preview, select quality/audio, save to
    Downloads and another directory. Verify playback, cancellation, partial cleanup,
@@ -74,9 +74,9 @@ developer caches or personal configuration with the guest.
    Profile settings/diagnostics are deliberately retained by uninstall.
 
 Do not disable Defender or other OS protections to make the installer pass.
-Measure the **first** installed EXE launch before warming up FFmpeg or Edge
+Measure the **first** installed EXE launch before warming up FFmpeg or the browser
 manually. A later successful retry is not a first-launch acceptance pass. Startup
-allows 60 seconds per media tool and 60 seconds for Edge launch, inside a
+allows 60 seconds per media tool and 60 seconds for browser launch, inside a
 four-minute dependency-check limit (plus bounded termination). These are maximum
 waits, not mandatory delays. Logs record native process-creation time and driver,
 browser and page stages. Timeouts are reported separately from missing/broken tools;
@@ -135,7 +135,8 @@ Still repeat installation/startup without Internet from the clean checkpoint wit
 Edge installed, and check the graphical installer and normal shortcut/UI flow for
 this candidate. Acceptance of the exact final release artifact remains required.
 
-Also verify missing Edge produces an actionable failure, with no browser download,
-personal-profile use or weaker fallback. Edge policies may prevent automation;
-report the error rather than changing system policies. Verify the installed Edge
-version and record it with acceptance evidence because it updates independently.
+For current candidates, also verify a missing selected browser produces an actionable
+failure, with no browser download, personal-profile use or weaker fallback. Browser
+policies may prevent automation; report the error rather than changing system policies.
+Verify Chrome and Edge separately and record their installed versions with acceptance
+evidence because they update independently.
