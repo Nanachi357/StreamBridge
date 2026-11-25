@@ -61,6 +61,19 @@ final class LauncherSupport {
     }
 
     static void probeDependencies() throws Exception {
+        probeDependencies(startupBrowser("default"));
+    }
+
+    static DiscoveryBrowser startupBrowser(String selected) {
+        if (selected.equals("chrome")) return DiscoveryBrowser.CHROME;
+        if (selected.equals("edge")) return DiscoveryBrowser.EDGE;
+        // The actual discovery choice comes from the requesting UI browser. This only
+        // selects an installed binary for the pre-UI dependency check.
+        try { browserPath("edge"); return DiscoveryBrowser.EDGE; }
+        catch (IllegalArgumentException absent) { browserPath("chrome"); return DiscoveryBrowser.CHROME; }
+    }
+
+    static void probeDependencies(DiscoveryBrowser browser) throws Exception {
         Path logs = LauncherSettings.file().getParent().resolve("startup-logs");
         Files.createDirectories(logs);
         Path run = Files.createTempDirectory(logs, "check-");
@@ -75,7 +88,7 @@ final class LauncherSupport {
             log.println("workingDirectory=" + Path.of("").toAbsolutePath());
             log.println("settings=" + LauncherSettings.file() + " exists=" + Files.isRegularFile(LauncherSettings.file()));
             try {
-                ProcessBuilder builder = LauncherSettings.childJava(LauncherDependencyProbe.class, run.resolve("probe.log").toString());
+                ProcessBuilder builder = LauncherSettings.childJava(LauncherDependencyProbe.class, run.resolve("probe.log").toString(), browser.argument());
                 for (String key : List.of("STREAMBRIDGE_FFMPEG_DIR")) {
                     String value = builder.environment().get(key);
                     log.println(key + " childEnvironment=" + value);
@@ -113,9 +126,9 @@ final class LauncherSupport {
         return switch (exit) {
             case 21 -> "Не вдалося запустити FFmpeg. Для встановленого комплекту перевстанови StreamBridge; для зовнішніх інструментів перевір mediaToolsDirectory у " + LauncherSettings.file();
             case 22 -> "Не вдалося запустити FFprobe. Для встановленого комплекту перевстанови StreamBridge; для зовнішніх інструментів перевір mediaToolsDirectory у " + LauncherSettings.file();
-            case 23 -> "Не вдалося запустити або перевірити Microsoft Edge Stable. Установи чи онови його з https://www.microsoft.com/edge/download. Якщо він уже встановлений, перевір політики браузера й журнал діагностики. Захист не вимикався.";
-            case 24 -> "Microsoft Edge не пройшов перевірку мережевої ізоляції WebRTC. Запуск зупинено; захист не вимикався.";
-            case 28, 29, 30 -> (exit == 28 ? "FFmpeg" : exit == 29 ? "FFprobe" : "Microsoft Edge")
+            case 23 -> "Не вдалося запустити або перевірити браузер. Установи чи онови Google Chrome або Microsoft Edge Stable. Перевір вибраний браузер і журнал діагностики. Захист не вимикався.";
+            case 24 -> "Браузер не пройшов перевірку мережевої ізоляції WebRTC. Запуск зупинено; захист не вимикався.";
+            case 28, 29, 30 -> (exit == 28 ? "FFmpeg" : exit == 29 ? "FFprobe" : "Браузер")
                     + " не завершив перевірку за відведений час. Перший запуск може бути повільнішим. Закрий зайві програми й повтори запуск; якщо помилка повториться, збережи діагностику. Таймаут не означає пошкодження файлів. Захист не вимикався.";
             default -> "Не вдалося перевірити компоненти StreamBridge. Деталі — у журналі діагностики.";
         };

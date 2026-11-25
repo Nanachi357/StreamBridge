@@ -26,7 +26,7 @@ class LocalUiSavingTest {
         Path destination = Files.createDirectory(root.resolve("destination"));
         Path unrelated = Files.writeString(root.resolve("keep.txt"), "unrelated");
         var owned = new java.util.concurrent.atomic.AtomicReference<Path>();
-        try (var session = new LocalUiSession(root, destination, (url, directory) -> {
+        try (var session = new LocalUiSession(root, destination, (url, directory, browser) -> {
             owned.set(directory); return worker(directory, "https://example.org/completion-gate");
         }, initial -> null)) {
             String id = completeWorker(session);
@@ -56,7 +56,7 @@ class LocalUiSavingTest {
         Path destination = Files.createDirectory(root.resolve("destination"));
         var reached = new CountDownLatch(1); var release = new CountDownLatch(1);
         var owned = new java.util.concurrent.atomic.AtomicReference<Path>();
-        try (var session = new LocalUiSession(root, destination, (url, directory) -> {
+        try (var session = new LocalUiSession(root, destination, (url, directory, browser) -> {
             owned.set(directory);
             Process child = worker(directory, url);
             // Delegate every Process operation; gate only the collector's exit observation.
@@ -131,7 +131,7 @@ class LocalUiSavingTest {
         } finally {release.countDown();}
     }
     private LocalUiSession session(Path work,Path output,OutputFiles.Publisher publisher) throws IOException {
-        return new LocalUiSession(work,new OutputPreferences.Selection(output,""),(url,directory)->worker(directory,url),initial->null,null,publisher);
+        return new LocalUiSession(work,new OutputPreferences.Selection(output,""),(url, directory, browser) ->worker(directory,url),initial->null,null,publisher);
     }
     private static Process worker(Path directory, String url) throws IOException {
         return new ProcessBuilder(Path.of(System.getProperty("java.home"),"bin",System.getProperty("os.name").startsWith("Windows")?"java.exe":"java").toString(),

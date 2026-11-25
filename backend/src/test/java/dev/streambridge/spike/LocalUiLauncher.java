@@ -61,7 +61,7 @@ public final class LocalUiLauncher {
         window.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         window.addWindowListener(new WindowAdapter() { @Override public void windowClosing(WindowEvent e) { requestStop(); } });
         var panel = new JPanel(new GridLayout(0, 1, 8, 12)); panel.setBorder(BorderFactory.createEmptyBorder(20,20,20,20));
-        panel.add(new JLabel("Браузер інтерфейсу (пошук відео — в окремому Edge):")); panel.add(browser);
+        panel.add(new JLabel("Браузер інтерфейсу й пошуку відео (Chrome або Edge):")); panel.add(browser);
         panel.add(message); panel.add(open); panel.add(copy); panel.add(stop);
         panel.add(new JLabel("Закриття вкладки UI не зупиняє завантаження."));
         window.setContentPane(panel); window.setSize(770,340); window.setLocationByPlatform(true);
@@ -84,7 +84,9 @@ public final class LocalUiLauncher {
     private void initialize() {
         try {
             if (instance.owner()) {
-                LauncherSupport.probeDependencies();
+                var selected = new String[1];
+                SwingUtilities.invokeAndWait(() -> selected[0] = selection());
+                LauncherSupport.probeDependencies(LauncherSupport.startupBrowser(selected[0]));
                 session = LocalUiSession.forUser(null);
                 app = new LocalUiSpike(session); launchUrl = app.launchUrl();
                 if (!LauncherSupport.ready(launchUrl)) throw new IllegalStateException("Backend не підтвердив готовність.");
@@ -111,7 +113,7 @@ public final class LocalUiLauncher {
             try {
                 LauncherSupport.open(selection, launchUrl);
                 var saved = new Properties(); saved.setProperty("browser", selection);
-                try (var output = Files.newOutputStream(preferences)) { saved.store(output, "UI browser only; no session key"); }
+                try (var output = Files.newOutputStream(preferences)) { saved.store(output, "UI browser preference; discovery follows requesting UI; no session key"); }
                 SwingUtilities.invokeLater(() -> message.setText("Посилання передано браузеру. Якщо UI не відкрився — скопіюй посилання."));
             } catch (Exception failure) {
                 SwingUtilities.invokeLater(() -> { message.setText("Не вдалося відкрити браузер. Вибери інший або скопіюй посилання."); JOptionPane.showMessageDialog(window, failure.getMessage(), "Браузер недоступний", JOptionPane.WARNING_MESSAGE); });

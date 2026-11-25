@@ -6,6 +6,19 @@ const fs=require('node:fs');
 const path=require('node:path');
 const code=fs.readFileSync(path.join(__dirname,'../resources/spike/ui/app.js'),'utf8');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
+test('selected browser isolation failure explains that the site was not opened',async()=>{
+ const f=fixture('#valid');await tick();
+ Object.assign(f.state,{status:'FAILED',phase:'FINISHED',error:'DISCOVERY_BROWSER_ISOLATION_FAILED'});f.emit();
+ assert.match(f.element('error').textContent,/до відкриття сайту/);
+ assert.match(f.element('error').textContent,/захист не вимикався/);
+});
+test('unsupported UI browser explains how to start discovery',async()=>{
+ const f=fixture('#valid');await tick();f.emit();f.state.rejectBrowser=true;
+ f.element('page-url').value='https://example.org/video';
+ f.element('start-form').events.submit({preventDefault(){}});await tick();
+ assert.match(f.element('error').textContent,/Google Chrome або Microsoft Edge/);
+ assert.match(f.element('error').textContent,/той самий браузер/);
+});
 test('preview budgets and compressed manifest exclusions have explicit explanations',async()=>{
  const f=fixture('#valid');await tick();
  Object.assign(f.state,{phase:'AWAITING_CONFIRMATION',previewError:'PREVIEW_REQUEST_LIMIT'});f.emit();
@@ -26,7 +39,7 @@ function fixture(hash='',stored='',storageBlocked=false){
  const context={document:{getElementById:element,createElement:newElement},location,
   history:{replaceState(){location.hash='';}},sessionStorage:{getItem(){if(storageBlocked)throw Error('blocked');return stored;},setItem(_,value){if(storageBlocked)throw Error('blocked');stored=value;}},
   window:{addEventListener(type,fn){listeners[type]=fn;}},Option:function(text,value){this.textContent=text;this.value=value;},AbortSignal,
-  fetch:async(url,options)=>{requests.push({url,options});if(url==='/api/pin'&&!state.rejectPin){const data=JSON.parse(options.body);state.catalog={...state.catalog,revision:state.catalog.revision+1,pinnedCandidateId:data.candidate};}return{ok:options.headers['X-StreamBridge-Key']==='valid'&&!(url==='/api/pin'&&state.rejectPin),status:403,json:async()=>JSON.parse(JSON.stringify(state))};},
+  fetch:async(url,options)=>{requests.push({url,options});if(url==='/api/start'&&state.rejectBrowser)return{ok:false,status:400,json:async()=>({error:'UNSUPPORTED_BROWSER'})};if(url==='/api/pin'&&!state.rejectPin){const data=JSON.parse(options.body);state.catalog={...state.catalog,revision:state.catalog.revision+1,pinnedCandidateId:data.candidate};}return{ok:options.headers['X-StreamBridge-Key']==='valid'&&!(url==='/api/pin'&&state.rejectPin),status:403,json:async()=>JSON.parse(JSON.stringify(state))};},
   EventSource:class{constructor(){this.listeners={};streams.push(this);}close(){this.closed=true;}addEventListener(type,fn){this.listeners[type]=fn;}},
  };
  vm.runInNewContext(code,context);

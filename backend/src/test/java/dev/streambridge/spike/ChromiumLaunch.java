@@ -14,12 +14,16 @@ final class ChromiumLaunch {
     }
 
     static Browser launch(BrowserType chromium, boolean headless, BrowserNetworkProxy network) {
-        // Use installed Edge Stable with a Playwright-owned temporary profile in both modes.
+        return launch(chromium, headless, DiscoveryBrowser.EDGE, network);
+    }
+
+    static Browser launch(BrowserType chromium, boolean headless, DiscoveryBrowser selected, BrowserNetworkProxy network) {
+        // Use the selected installed browser with a Playwright-owned temporary profile.
         // Never retry with weaker settings if the sandboxed launch fails.
         var options = new BrowserType.LaunchOptions()
                 .setChromiumSandbox(true)
                 .setHeadless(headless)
-                .setChannel("msedge")
+                .setChannel(selected.channel)
                 .setTimeout(StartupTimeouts.BROWSER.toMillis());
         var args = new ArrayList<>(ChromiumFeaturePolicy.arguments());
         if (network != null) {

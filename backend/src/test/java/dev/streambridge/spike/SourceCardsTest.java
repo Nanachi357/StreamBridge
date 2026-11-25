@@ -29,7 +29,7 @@ class SourceCardsTest {
                 "#EXTM3U\n#EXTINF:1444.026192,\na.ts\n#EXT-X-ENDLIST");
         catalog.observe("https://other.example/master", "https://player.example/watch?secret", "F2",
                 "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1000\nv.m3u8");
-        var session = new LocalUiSession(root, (url, dir) -> { throw new AssertionError("No real worker in UI rendering test"); });
+        var session = new LocalUiSession(root, (url, dir, browser) -> { throw new AssertionError("No real worker in UI rendering test"); });
         try (var app = new LocalUiSpike(session);
              var playwright = Playwright.create(new Playwright.CreateOptions().setEnv(Map.of("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1")));
              var browser = ChromiumLaunch.launch(playwright.chromium(), true)) {

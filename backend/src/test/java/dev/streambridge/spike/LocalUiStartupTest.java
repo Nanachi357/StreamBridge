@@ -13,7 +13,7 @@ class LocalUiStartupTest {
     @TempDir Path root;
 
     private LocalUiSession session(long delay) throws Exception {
-        return new LocalUiSession(root, (url, directory) -> new ProcessBuilder(
+        return new LocalUiSession(root, (url, directory, browser) -> new ProcessBuilder(
                 Path.of(System.getProperty("java.home"), "bin", System.getProperty("os.name").startsWith("Windows") ? "java.exe" : "java").toString(),
                 "-cp", System.getProperty("streambridge.testClasspath"), Probe.class.getName(), Long.toString(delay))
                 .redirectErrorStream(true).start());

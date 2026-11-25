@@ -10,7 +10,7 @@ Windows launcher (LocalUiLauncher)
   -> local HTTP server (LocalUiSpike) <-> ordinary browser UI: HTTP commands + SSE
   -> operation owner (LocalUiSession)
        -> child JVM (RealDiscoverySpike), bounded line-based JSON events on stdout
-            -> installed Edge (temporary Playwright profile) -> public-address SOCKS5 gateway
+            -> installed Chrome/Edge (temporary Playwright profile) -> public-address SOCKS5 gateway
             -> observed HLS catalog -> user selection -> transfer plan
             -> DNS-pinned HTTP acquisition -> owned local segment files
             -> FFmpeg / FFprobe, local inputs only
@@ -23,6 +23,17 @@ snapshot. A session key, Host/Origin checks and a restrictive CSP protect the
 loopback UI; do not expose it through a remote bind or public tunnel.
 
 ## Discovery and selection
+
+The authenticated `/api/start` request selects Chrome or Edge from its desktop Windows
+User-Agent (Edge is checked before the shared Chrome token). The selection is passed
+explicitly to that child JVM, not stored in global mutable browser settings. A different
+UI tab cannot change the browser of an active operation. Only fixed Playwright channels
+are allowed; missing/unsupported clients fail explicitly. Browser selection changes
+neither the sandbox nor the network gateway. Personal profiles are never attached.
+Each worker also verifies direct WebRTC isolation in its selected browser before
+navigating: a startup check of Edge cannot certify a later Chrome operation.
+After selection, transfer still uses the existing bounded HTTP/FFmpeg pipeline; it
+does not switch to another browser or to the browser's download manager.
 
 Discovery observes requests made by the selected page and its frames. It has no
 default overall timeout or cumulative playlist-count cutoff. Pending requests

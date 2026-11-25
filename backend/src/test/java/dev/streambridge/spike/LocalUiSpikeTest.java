@@ -16,16 +16,21 @@ class LocalUiSpikeTest {
     private LocalUiSession session;
     private LocalUiSpike app;
     private OutputFiles.FolderChooser chooser = initial -> null;
+    private DiscoveryBrowser launchedBrowser;
     private final HttpClient client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
     @BeforeEach void start() throws Exception {
-        session=new LocalUiSession(root,root,(url,directory)->new ProcessBuilder(Path.of(System.getProperty("java.home"),"bin",System.getProperty("os.name").startsWith("Windows")?"java.exe":"java").toString(),
-                "-cp",System.getProperty("streambridge.testClasspath"),LocalUiWorkerFixture.class.getName(),directory.toString(),url).redirectErrorStream(true).start(), initial -> chooser.choose(initial));
+        session=new LocalUiSession(root,root,(url, directory, browser) -> {
+            launchedBrowser = browser;
+            return new ProcessBuilder(Path.of(System.getProperty("java.home"),"bin",System.getProperty("os.name").startsWith("Windows")?"java.exe":"java").toString(),
+                "-cp",System.getProperty("streambridge.testClasspath"),LocalUiWorkerFixture.class.getName(),directory.toString(),url).redirectErrorStream(true).start();
+        }, initial -> chooser.choose(initial));
         app=new LocalUiSpike(session);
     }
     @AfterEach void stop(){app.close();}
     private HttpResponse<String> post(String path,Object body,String origin,String key) throws Exception {
         var request=HttpRequest.newBuilder(URI.create(app.origin()+path)).timeout(Duration.ofSeconds(5))
                 .header("Content-Type","application/json").header("Origin",origin).header("X-StreamBridge-Key",key)
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/158.0.0.0 Edg/158.0.0.0")
                 .POST(HttpRequest.BodyPublishers.ofString(body instanceof String s?s:UiProtocol.json(body))).build();
         return client.send(request,HttpResponse.BodyHandlers.ofString());
     }
@@ -42,6 +47,28 @@ class LocalUiSpikeTest {
         assertEquals(200,post("/api/start",Map.of("url","https://example.org/watch?secret=do-not-export")).statusCode());
         await(()->session.snapshot().get("phase").equals("DISCOVERING"));
         return (String)session.snapshot().get("discoveryId");
+    }
+    @Test void startUsesRequestBrowserAndRejectsUnsupportedClientsWithoutLaunching() throws Exception {
+        for (String agent : new String[]{"Mozilla/5.0 Firefox/150.0", "curl/8.0"}) {
+            var request = HttpRequest.newBuilder(URI.create(app.origin()+"/api/start"))
+                    .header("Content-Type","application/json").header("Origin",app.origin())
+                    .header("X-StreamBridge-Key",app.key()).header("User-Agent",agent)
+                    .POST(HttpRequest.BodyPublishers.ofString("{\"url\":\"https://example.org\"}")).build();
+            var response=client.send(request,HttpResponse.BodyHandlers.ofString());
+            assertEquals(400,response.statusCode()); assertTrue(response.body().contains("UNSUPPORTED_BROWSER"));
+            assertNull(launchedBrowser); assertEquals("IDLE",session.snapshot().get("status"));
+        }
+        var request=HttpRequest.newBuilder(URI.create(app.origin()+"/api/start"))
+                .header("Content-Type","application/json").header("Origin",app.origin())
+                .header("X-StreamBridge-Key",app.key()).header("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/158.0.0.0")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"url\":\"https://example.org\"}")).build();
+        assertEquals(200,client.send(request,HttpResponse.BodyHandlers.ofString()).statusCode());
+        assertEquals(DiscoveryBrowser.CHROME,launchedBrowser);
+        assertEquals(409,post("/api/start",Map.of("url","https://example.org/other")).statusCode());
+        assertEquals(DiscoveryBrowser.CHROME,launchedBrowser); // Another Edge tab cannot switch an active worker.
+    }
+    @Test void edgeRequestChoosesEdgeDespiteChromeToken() throws Exception {
+        launch(); assertEquals(DiscoveryBrowser.EDGE,launchedBrowser);
     }
     @Test void noCredentialsOrForeignOriginsCannotReadOrControlUi() throws Exception {
         assertEquals(403,get("/api/state","").statusCode());

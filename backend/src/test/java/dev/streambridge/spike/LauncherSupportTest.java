@@ -12,11 +12,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class LauncherSupportTest {
     @TempDir Path root;
-    @Test void browserFailureIdentifiesExternalEdgePrerequisite() {
+    @Test void browserFailureIdentifiesSupportedExternalBrowsers() {
         String message = LauncherSupport.probeFailure(23);
         assertTrue(message.contains("Microsoft Edge Stable"));
-        assertTrue(message.contains("https://www.microsoft.com/edge/download"));
+        assertTrue(message.contains("Google Chrome"));
         assertFalse(message.contains("chromiumDirectory"));
+    }
+    @Test void explicitStartupChoiceIsNotChangedToOtherInstalledBrowser() {
+        assertEquals(DiscoveryBrowser.CHROME, LauncherSupport.startupBrowser("chrome"));
+        assertEquals(DiscoveryBrowser.EDGE, LauncherSupport.startupBrowser("edge"));
     }
     private static final String KEY = "a".repeat(72);
     private static Process probe(String mode) throws IOException {

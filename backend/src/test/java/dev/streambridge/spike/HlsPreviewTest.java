@@ -170,7 +170,7 @@ class HlsPreviewTest {
     }
     private void verifyUiPlayback(Path clip) throws Exception {
         Path work = Files.createDirectory(root.resolve("ui"));
-        var session = new LocalUiSession(work, (url, directory) -> new ProcessBuilder(
+        var session = new LocalUiSession(work, (url, directory, browser) -> new ProcessBuilder(
                 Path.of(System.getProperty("java.home"), "bin", "java.exe").toString(), "-cp",
                 System.getProperty("streambridge.testClasspath"), LocalUiWorkerFixture.class.getName(),
                 directory.toString(), url, clip.toString()).redirectErrorStream(true).start());

@@ -19,17 +19,17 @@ import java.util.concurrent.TimeoutException;
 public final class LauncherDependencyProbe {
     public static void main(String[] args) throws Exception {
         // A separate file avoids mixing diagnostic output with the runtime acknowledgement.
-        try (var log = args.length == 1
+        try (var log = args.length >= 1
                 ? new PrintWriter(Files.newBufferedWriter(Path.of(args[0]), StandardCharsets.UTF_8), true)
                 : new PrintWriter(System.err, true)) {
-            int exit = run(log);
+            int exit = run(log, args.length >= 2 ? DiscoveryBrowser.parse(args[1]) : DiscoveryBrowser.EDGE);
             log.println("probeExit=" + exit);
             if (exit != 0) { log.flush(); System.exit(exit); }
         }
         System.out.println("JAVA_RUNTIME=" + System.getProperty("java.home"));
     }
 
-    private static int run(PrintWriter log) {
+    private static int run(PrintWriter log, DiscoveryBrowser selected) {
         long started = System.nanoTime();
         log.println("javaHome=" + System.getProperty("java.home"));
         log.println("workingDirectory=" + Path.of("").toAbsolutePath());
@@ -50,15 +50,15 @@ public final class LauncherDependencyProbe {
                 return tool.equals("ffmpeg") ? 21 : 22;
             }
         }
-        log.println("browserChannel=msedge");
+        log.println("browserChannel=" + selected.channel);
         stage(log, started, "playwright-driver-start");
         try (var network = new BrowserNetworkProxy();
              var playwright = Playwright.create(new Playwright.CreateOptions().setEnv(Map.of("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1")))) {
             stage(log, started, "playwright-driver-ready-browser-start");
-            try (var browser = ChromiumLaunch.launch(playwright.chromium(), true, network);
+            try (var browser = ChromiumLaunch.launch(playwright.chromium(), true, selected, network);
                  var context = browser.newContext()) {
                 stage(log, started, "browser-context-ready");
-                log.println("edgeVersion=" + browser.version());
+                log.println("browserVersion=" + browser.version());
                 log.println("chromiumSandboxRequested=true");
                 log.println("browserNetworkGateway=public-only-socks5");
                 var page = context.newPage(); page.setContent("<title>StreamBridge startup check</title>");

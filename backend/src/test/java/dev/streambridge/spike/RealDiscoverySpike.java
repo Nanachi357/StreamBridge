@@ -27,6 +27,8 @@ public final class RealDiscoverySpike {
     private boolean allowSample;
     private boolean allowFullDownload;
     private boolean ui;
+    private DiscoveryBrowser selectedBrowser = DiscoveryBrowser.EDGE;
+    private boolean headless;
     private HlsTransferPlan pendingDownload;
     private final Map<String, Integer> issues = new TreeMap<>();
     private final List<Frame> frames = new ArrayList<>();
@@ -54,7 +56,8 @@ public final class RealDiscoverySpike {
     }
     private Browser startBrowser(Playwright playwright, BrowserNetworkProxy network) {
         startupStage("browser-start");
-        var browser = ChromiumLaunch.launch(playwright.chromium(), false, network);
+        var browser = ChromiumLaunch.launch(playwright.chromium(), headless, selectedBrowser, network);
+        log("BROWSER channel=" + selectedBrowser.channel + " version=" + browser.version());
         startupStage("browser-ready");
         return browser;
     }
@@ -72,6 +75,8 @@ public final class RealDiscoverySpike {
             else if (arg.equals("--allow-sample-probe")) allowSample = true;
             else if (arg.equals("--allow-full-download")) allowFullDownload = true;
             else if (arg.equals("--ui")) ui = true;
+            else if (arg.startsWith("--browser=")) selectedBrowser = DiscoveryBrowser.parse(arg.substring(10));
+            else if (arg.equals("--headless")) headless = true;
             else throw new IllegalArgumentException("Unknown diagnostic option");
         }
         if (target == null || observeMs != 0 && (observeMs < 5000 || observeMs > 180000)) throw new IllegalArgumentException("Provide --url and 0 (until selection/stop) or 5000..180000 observation ms");
@@ -127,6 +132,14 @@ public final class RealDiscoverySpike {
             context.setDefaultTimeout(3000);
             browserRef[0] = browser;
             Page page = context.newPage();
+            // The UI may have been reopened in another browser after startup. Verify
+            // this exact browser before sending it to an untrusted page.
+            try { LauncherDependencyProbe.verifyNoDirectWebRtc(page); }
+            catch (Exception isolationFailure) {
+                endReason = "DISCOVERY_BROWSER_ISOLATION_FAILED";
+                throw isolationFailure;
+            }
+            startupStage("browser-network-verified");
             deadlineGuard.beginObservation();
             startupStage("page-ready");
             var activity = new DiscoveryActivity(System.nanoTime(), observeMs);
@@ -436,7 +449,7 @@ public final class RealDiscoverySpike {
     }
 
     private static String nodeSignature(Locator node) {
-        return ascii((String) node.evaluate("e => [e.tagName,e.id,e.className||'',e.getAttribute('aria-label')||'',e.tagName==='IFRAME'?'iframe':(e.children.length===0?(e.innerText||'').trim().slice(0,60):''),Array.from(e.attributes).map(a=>a.name).filter(n=>n.startsWith('data-')).join(',')].join(' | ').replace(/[\\r\\n\\t]/g,' ')") );
+        return ascii((String) node.evaluate("e => [e.tagName,e.id,e.className||'',e.getAttribute('aria-label')||'',e.tagName==='IFRAME'?'iframe':(e.innerText||'').trim().slice(0,60),Array.from(e.attributes).map(a=>a.name).filter(n=>n.startsWith('data-')).join(',')].join(' | ').replace(/[\\r\\n\\t]/g,' ')") );
     }
 
     private static String ascii(String value) {

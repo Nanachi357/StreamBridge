@@ -12,7 +12,8 @@ paywalls, CAPTCHA and access-control bypasses are outside the project scope.
 ## What works
 
 - A Windows launcher opens a local web UI in your chosen/default browser.
-- Discovery opens a separate Microsoft Edge window with an isolated temporary profile. Start the intended video
+- Discovery opens the same browser as the UI (Google Chrome or Microsoft Edge on Windows),
+  in a separate window with an isolated temporary profile. Start the intended video
   or switch players/episodes there to generate media requests.
 - Source cards show requesting frames, declared qualities, associated audio and
   observed duration. Sources are not automatically classified as content or ads.
@@ -32,8 +33,10 @@ paywalls, CAPTCHA and access-control bypasses are outside the project scope.
 
 ## Current limits
 
-- Windows 11 x64 with installed **Microsoft Edge Stable** is the application target.
-  Edge is required for discovery, independently of the browser chosen for the UI.
+- Windows 11 x64 with installed **Google Chrome Stable or Microsoft Edge Stable** is the application target.
+  Open the UI in the browser you want to use for discovery. The authenticated start request's
+  User-Agent selects an allowlisted Playwright channel (`chrome` or `msedge`); it never supplies
+  an executable path. Unsupported browsers are rejected, and launch failure does not switch browsers.
   StreamBridge neither bundles nor downloads a browser. See the
   [installer acceptance procedure](docs/private-installer.md).
 - One operation at a time; no persistence or resume of jobs after restart.
@@ -88,11 +91,12 @@ is needed; dependency downloads and ordinary up-to-date task checks still work.
 
 ## Set up the Windows pilot
 
-1. Install or update **Microsoft Edge Stable** using
-   [Microsoft's official installer](https://www.microsoft.com/edge/download).
-   It is normally present on Windows 11, but can be absent or restricted by policy.
-   Playwright Java **1.64.0** uses its `msedge` channel; no browser-cache download
-   or custom executable path is needed. Edge updates independently of StreamBridge.
+1. Install or update **Google Chrome Stable** from [Google](https://www.google.com/chrome/)
+   or **Microsoft Edge Stable** from [Microsoft](https://www.microsoft.com/edge/download).
+   Playwright Java **1.64.0** uses the matching `chrome` or `msedge` channel; no browser-cache
+   download or custom executable path is needed. Browsers update independently of StreamBridge.
+   Startup checks the explicitly selected browser, or an available browser for the default-browser option.
+   Discovery then uses the browser of the UI tab that starts that operation.
 
 2. Obtain FFmpeg and FFprobe from a trusted distribution linked by the
    [FFmpeg project](https://ffmpeg.org/download.html). Review its license and verify
@@ -142,7 +146,7 @@ The Windows x64 HotSpot ZIP SHA-256 is
 The new folder is under `backend/build/windows-app/<build-id>/StreamBridge`;
 `backend/build/windows-app/latest-path.txt` gives its full path. Run
 `StreamBridge.exe` and keep the entire folder together. Java is included;
-Microsoft Edge and FFmpeg/FFprobe are external prerequisites. For persistent tool paths, copy
+Google Chrome or Microsoft Edge, and FFmpeg/FFprobe are external prerequisites. For persistent tool paths, copy
 `backend/packaging/tools.example.properties` to
 `%LOCALAPPDATA%/StreamBridge/pilot-launcher/tools.properties` and edit it.
 Explicit environment variables take precedence. This is an unsigned developer
@@ -150,9 +154,9 @@ app-image, **not the planned self-contained alpha installer**. The numeric Windo
 version is currently `0.1.0`; Gradle's development version is `0.1.0-SNAPSHOT`.
 
 A separate [private installer workflow](docs/private-installer.md) bundles Java
-and the owned FFmpeg runtime in a per-user EXE installer. **Installed Edge Stable
+and the owned FFmpeg runtime in a per-user EXE installer. **Installed Chrome or Edge Stable
 is the only browser prerequisite.** Discovery uses a temporary profile, never
-the user's normal Edge profile. Missing Edge or a failed protected launch produces
+the user's normal browser profile. A missing selected browser or a failed protected launch produces
 an error; there is no fallback download or launch without the sandbox.
 
 The installer verifies its embedded payload. Clean-Windows acceptance must be

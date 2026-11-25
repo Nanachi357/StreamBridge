@@ -8,7 +8,7 @@ import java.util.*;
 
 /** Owns ONE worker process. All UI state transitions use the same monitor. */
 final class LocalUiSession implements AutoCloseable {
-    @FunctionalInterface interface Launcher { Process launch(String url, Path directory) throws IOException; }
+    @FunctionalInterface interface Launcher { Process launch(String url, Path directory, DiscoveryBrowser browser) throws IOException; }
     private final Path root;
     private final Launcher launcher;
     private final OutputFiles.FolderChooser folderChooser;
@@ -63,10 +63,10 @@ final class LocalUiSession implements AutoCloseable {
         return new LocalUiSession(OutputFiles.workRoot(), selection, LocalUiSession::launchWorker,
                 OutputFiles::chooseFolder, preferences);
     }
-    private static Process launchWorker(String url, Path directory) throws IOException {
+    private static Process launchWorker(String url, Path directory, DiscoveryBrowser browser) throws IOException {
         return LauncherSettings.childJava(RealDiscoverySpike.class,
                 "--ui", "--network-only", "--allow-full-download", "--observe-ms=0",
-                "--report-dir=" + directory, "--url=" + url).redirectErrorStream(true).start();
+                "--report-dir=" + directory, "--url=" + url, "--browser=" + browser.argument()).redirectErrorStream(true).start();
     }
     synchronized Map<String, Object> snapshot() {
         var result = new LinkedHashMap<String, Object>();
@@ -92,6 +92,10 @@ final class LocalUiSession implements AutoCloseable {
                 "progress", progress, "mediaSummary", mediaSummary, "mediaIncluded", false, "addressesIncluded", false);
     }
     synchronized void start(String url) throws IOException {
+        start(url, DiscoveryBrowser.EDGE);
+    }
+    synchronized void start(String url, DiscoveryBrowser browser) throws IOException {
+        Objects.requireNonNull(browser);
         if (closing || status.equals("RUNNING") || choosingFolder || process != null && process.isAlive()) throw new IllegalStateException("WORKER_ACTIVE");
         if (url == null || url.length() > 4096) throw new IllegalArgumentException("INVALID_PAGE_URL");
         PublicWebPolicy.host(URI.create(url)); // Actual DNS/public-IP validation runs inside the isolated worker.
@@ -104,7 +108,7 @@ final class LocalUiSession implements AutoCloseable {
         discoveryId = UUID.randomUUID().toString(); downloadId = "";
         status = "RUNNING"; phase = "STARTING"; changed();
         try {
-            process = launcher.launch(url, runDirectory);
+            process = launcher.launch(url, runDirectory, browser);
             commands = new BufferedWriter(new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
             Process own = process;
             var finished = new java.util.concurrent.CountDownLatch(1); workerFinished = finished;

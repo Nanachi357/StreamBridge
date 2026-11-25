@@ -90,7 +90,12 @@ public final class LocalUiSpike implements AutoCloseable {
             Map<String,Object> request = UiProtocol.object(new String(body,StandardCharsets.UTF_8));
             switch (path) {
                 case "/api/session" -> headers.add("Set-Cookie",cookieName + "=" + key + "; HttpOnly; SameSite=Strict; Path=/");
-                case "/api/start" -> session.start(string(request,"url"));
+                case "/api/start" -> {
+                    DiscoveryBrowser browser;
+                    try { browser = DiscoveryBrowser.fromUserAgent(exchange.getRequestHeaders().getFirst("User-Agent")); }
+                    catch (IllegalArgumentException unsupported) { safeError(exchange,400,"UNSUPPORTED_BROWSER"); return; }
+                    session.start(string(request,"url"), browser);
+                }
                 case "/api/pin" -> session.pin(string(request,"id"),((Number)request.get("revision")).longValue(),string(request,"candidate"));
                 case "/api/prepare" -> session.prepare(string(request,"id"), ((Number)request.get("revision")).longValue(),
                         string(request,"candidate"), string(request,"variant"), string(request,"audio"));

@@ -82,7 +82,7 @@ class OutputPreferencesTest {
     }
     private LocalUiSession session(OutputPreferences preferences, OutputFiles.FolderChooser chooser) throws Exception {
         return new LocalUiSession(root.resolve("work"), preferences.load(() -> root),
-                (url, directory) -> { throw new AssertionError("No worker expected"); }, chooser, preferences);
+                (url, directory, browser) -> { throw new AssertionError("No worker expected"); }, chooser, preferences);
     }
     private static void await(BooleanSupplier condition) throws Exception {
         long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
