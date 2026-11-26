@@ -82,17 +82,26 @@ artifacts. The installed README and THIRD-PARTY.txt point at the same release pa
 2. Verify the final checksums, notices/material contents and absence of personal
    data. Upload only the explicitly reviewed `release-files` contents, never the
    whole build directory, private build record, test logs or VM evidence.
-3. Restore the clean Windows checkpoint with a supported browser installed. Test standard-user
-   offline installation and **first** startup. Then test online discovery,
-   preview/download/cancellation, saved folder, reboot, uninstall/reinstall and
-   preservation of existing user data. Verify discovery in both Chrome and Edge.
-   Record the exact installer hash and browser versions.
-4. Check the graphical installer and shortcut/UI flow. Keep Defender/OS protections
-   enabled; document actual prompts for the unsigned EXE. Use the
-   [existing acceptance steps](private-installer.md#acceptance-on-a-clean-vm).
+3. For ordinary application-only changes, reuse the qualified installation baseline
+   when the packaging recipe, pinned inputs and installation contract are unchanged.
+   Verify the new EXE's embedded file inventory and installer identity/scope, then
+   run the actual extracted application's hidden self-check with isolated settings.
+   Record the clean source commit, new installer hash and reused baseline. This is
+   payload/startup verification, not a claim that this exact EXE was installed in a VM.
+4. Repeat targeted VM scenarios only when installation-related behavior changes:
+   packaging tools/scripts, runtime/native dependencies, layout, launch contract,
+   privileges, shortcuts, upgrade identity/version behavior, uninstall or migration.
+   A concrete installation defect or new supported Windows environment also requires
+   relevant checks. For the initial baseline, use the
+   [clean-VM acceptance steps](private-installer.md#acceptance-on-a-clean-vm), including
+   offline installation, first startup, reboot, uninstall/reinstall and graphical
+   prompts with OS protections enabled. An application-only commit or new EXE hash
+   does not by itself require repeating this cycle. Feature changes use their own
+   tests and CI, including browser/media checks where relevant.
 5. Finalize the [release note draft](releases/v0.1.0-alpha.1.md) and actual asset
    links. Obtain a separate publication decision. Create the prerelease/tag and
    upload only after that authorization. Neither script performs this step.
 
-Earlier private/Edge VM runs and developer EXE checks are useful evidence but do
-not replace acceptance of the final public-identity installer.
+A reused installation baseline must cover the same public installer identity and
+installation contract; an unrelated private installer is insufficient. Keep its
+evidence and the comparison with the new candidate. No check above authorizes publication.
