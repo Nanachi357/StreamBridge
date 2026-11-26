@@ -339,7 +339,8 @@ public final class RealDiscoverySpike {
                                 catch (Exception failure) {
                                     if (failure instanceof FfmpegTransfer.ProcessNotStoppedException) cancelled.set(true);
                                     if (failure instanceof InterruptedException) Thread.currentThread().interrupt();
-                                    event("previewError", failure instanceof HlsPreview.LimitException ? failure.getMessage()
+                                    event("previewError", failure instanceof MediaResolution.Mismatch ? "MEDIA_RESOLUTION_MISMATCH"
+                                            : failure instanceof HlsPreview.LimitException ? failure.getMessage()
                                             : failure instanceof BoundedResourceFetcher.FetchException f
                                             ? f.diagnosticCode() : "PREVIEW_UNAVAILABLE");
                                 } finally { event("phase", "AWAITING_CONFIRMATION"); }

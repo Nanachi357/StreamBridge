@@ -88,10 +88,22 @@ final class RealHlsSampleProbe {
                 stage = "CONFIRMATION";
                 Path previewDirectory = directory;
                 temporary.add(directory.resolve("preview.mp4"));
+                var previewMismatch = new java.util.concurrent.atomic.AtomicBoolean();
                 if (!approve(review, r -> feedback.approve(r, approval,
                         new TransferFeedback.Preview(HlsPreview.maximumMillis(playlists),
-                                millis -> HlsPreview.create(playlists, previewDirectory, fetcher, tools, feedback, millis))),
+                                millis -> {
+                                    try {
+                                        Path clip = HlsPreview.create(playlists, previewDirectory, fetcher, tools, feedback, millis,
+                                                HlsPreview.DEFAULT_LIMITS, System::nanoTime, plan.choice().resolution());
+                                        previewMismatch.set(false);
+                                        return clip;
+                                    } catch (MediaResolution.Mismatch mismatch) {
+                                        previewMismatch.set(true);
+                                        throw mismatch;
+                                    }
+                                })),
                         log, feedback.alwaysReview())) return Result.CANCELLED;
+                if (previewMismatch.get()) throw new MediaResolution.Mismatch();
                 largeApproved = review.needsConfirmation();
             }
             int allCompleted = 0;
@@ -162,6 +174,7 @@ final class RealHlsSampleProbe {
                     "-show_entries", "stream=codec_name,codec_type,width,height,sample_rate,channels:format=duration",
                     "-of", "default=noprint_wrappers=1", partial.toString()), directory.resolve("output-probe.log"), 10000);
             if (full) verifyDuration(Files.readAllLines(directory.resolve("output-probe.log")), playlists.getFirst().durationSeconds().doubleValue());
+            MediaResolution.verify(plan.choice().resolution(), Files.readAllLines(directory.resolve("output-probe.log")));
             Path result = directory.resolve(full ? "video.mp4" : "sample.mp4");
             checkCancelled(feedback);
             Files.move(partial, result);
@@ -178,8 +191,9 @@ final class RealHlsSampleProbe {
                 log.accept("SAMPLE_CANCELLED; cleaning owned partials");
                 return Result.CANCELLED;
             }
-            String reason = failure instanceof BoundedResourceFetcher.FetchException f ? f.diagnosticCode() : failure.getClass().getSimpleName();
-            feedback.failure(stage + "_" + reason);
+            String reason = failure instanceof MediaResolution.Mismatch ? "MEDIA_RESOLUTION_MISMATCH"
+                    : failure instanceof BoundedResourceFetcher.FetchException f ? f.diagnosticCode() : failure.getClass().getSimpleName();
+            feedback.failure(failure instanceof MediaResolution.Mismatch ? reason : stage + "_" + reason);
             log.accept("SAMPLE_FAILED stage=" + stage + " reason=" + reason + "; no bypass or retry; output not published");
             return Result.FAILED;
         } finally {

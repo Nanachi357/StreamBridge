@@ -136,7 +136,8 @@ class HlsPreviewTest {
             HlsPreview.create(playlists, directory, (uri, limits, budget) -> {
                 budget.claim(); return new BoundedResourceFetcher.Resource(uri, uri.equals(v) ? videoBytes : audioBytes);
             }, tools, TransferFeedback.NONE, 7500);
-            double longer = Double.parseDouble(Files.readString(directory.resolve("preview-probe.log")).strip());
+            double longer = Double.parseDouble(Files.readAllLines(directory.resolve("preview-probe.log")).stream()
+                    .filter(s -> s.startsWith("duration=")).findFirst().orElseThrow().substring(9));
             assertTrue(longer >= 7 && longer <= 8.5);
             assertDecodedPrefixUnchanged(generator, video, result, "v:0", directory);
         }

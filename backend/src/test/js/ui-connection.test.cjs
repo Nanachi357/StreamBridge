@@ -166,6 +166,17 @@ test('protected, invalid and unassociated sources cannot be selected; lost conne
  catalog.candidates[0].metadataUsable=true;catalog.revision++;f.emit();assert.equal(radio(f).disabled,false);
  f.streams.at(-1).onerror();assert.equal(radio(f).disabled,true);
 });
+test('resolution mismatch explains failure without suggesting shorter previews',async()=>{
+ const f=fixture('#valid');await tick();
+ Object.assign(f.state,{phase:'AWAITING_CONFIRMATION',previewError:'MEDIA_RESOLUTION_MISMATCH',previewReady:false});f.emit();
+ assert.match(f.element('preview-status').textContent,/не відповідає вибраній/);
+ assert.doesNotMatch(f.element('preview-status').textContent,/коротший/);
+ assert.equal(f.element('preview-video').hidden,true);
+ assert.equal(f.element('confirm').disabled,true);
+ Object.assign(f.state,{phase:'FINISHED',status:'FAILED',error:'MEDIA_RESOLUTION_MISMATCH',workerAlive:false});f.emit();
+ assert.match(f.element('error').textContent,/Файл не збережено/);
+});
+
 test('browser launch failure explains the required sandbox without claiming it caused the failure',async()=>{
  const f=fixture('#valid');await tick();
  Object.assign(f.state,{phase:'FINISHED',status:'FAILED',error:'DISCOVERY_BROWSER_START_FAILED',workerAlive:false});f.emit();

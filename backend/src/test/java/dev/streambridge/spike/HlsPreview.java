@@ -54,6 +54,11 @@ final class HlsPreview {
     static Path create(List<HlsVodPlaylist> playlists, Path directory, HlsAcquisition.Fetch fetch,
                        Path tools, TransferFeedback feedback, long durationMillis, Limits limits,
                        java.util.function.LongSupplier clock) throws Exception {
+        return create(playlists, directory, fetch, tools, feedback, durationMillis, limits, clock, "unknown");
+    }
+    static Path create(List<HlsVodPlaylist> playlists, Path directory, HlsAcquisition.Fetch fetch,
+                       Path tools, TransferFeedback feedback, long durationMillis, Limits limits,
+                       java.util.function.LongSupplier clock, String expectedResolution) throws Exception {
         if (durationMillis < 1 || durationMillis > maximumMillis(playlists))
             throw new IllegalArgumentException("INVALID_PREVIEW_DURATION");
         var temporary = new ArrayList<Path>();
@@ -111,9 +116,13 @@ final class HlsPreview {
                     budget.remainingMillis((int)Math.max(30_000, Math.min(600_000, durationMillis))));
             Path probe = directory.resolve("preview-probe.log");
             HlsDownloadSpike.runChecked(List.of(HlsDownloadSpike.executable(tools, "ffprobe.exe").toString(),
-                    "-v", "error", "-protocol_whitelist", "file", "-f", "mov", "-show_entries", "format=duration",
-                    "-of", "default=noprint_wrappers=1:nokey=1", partial.toString()), probe, budget.remainingMillis(10_000));
-            validateDuration(Double.parseDouble(Files.readString(probe).strip()), durationMillis);
+                    "-v", "error", "-protocol_whitelist", "file", "-f", "mov", "-select_streams", "v:0",
+                    "-show_entries", "stream=width,height:format=duration",
+                    "-of", "default=noprint_wrappers=1", partial.toString()), probe, budget.remainingMillis(10_000));
+            var probeLines = Files.readAllLines(probe);
+            validateDuration(Double.parseDouble(probeLines.stream().filter(s -> s.startsWith("duration="))
+                    .findFirst().orElseThrow().substring(9)), durationMillis);
+            MediaResolution.verify(expectedResolution, probeLines);
             checkCancelled(feedback);
             budget.remainingMillis(10_000);
             Path result = directory.resolve("preview.mp4");

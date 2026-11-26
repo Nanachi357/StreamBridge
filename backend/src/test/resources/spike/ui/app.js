@@ -66,7 +66,7 @@ function controls(){
  $('pin-retry').hidden=!selectedCandidateId||pinned||state?.phase!=='DISCOVERING';$('pin-retry').disabled=!discovering;
  $('pin-status').textContent=selectedCandidateId&&state?.phase==='DISCOVERING'?(pinned?'Джерело закріплено в кеші. Нові сторонні потоки не скинуть вибір.':sending?'Закріплюємо вибране джерело…':'Закріплення не підтверджено. Повтори спробу перед перевіркою вибору.'):'';
  $('start').disabled=!online||sending||!!state?.workerAlive||state?.status==='RUNNING'||!!state?.choosingFolder;$('page-url').disabled=!!state?.workerAlive;
- $('confirm').disabled=!online||sending||!!state?.choosingFolder||state?.phase!=='AWAITING_CONFIRMATION';$('cancel').disabled=!online||sending||state?.phase==='CANCELLING';
+ $('confirm').disabled=!online||sending||!!state?.choosingFolder||state?.previewError==='MEDIA_RESOLUTION_MISMATCH'||state?.phase!=='AWAITING_CONFIRMATION';$('cancel').disabled=!online||sending||state?.phase==='CANCELLING';
  $('choose-folder').disabled=!online||sending||!!state?.choosingFolder||(state?.status==='RUNNING'&&state?.phase!=='AWAITING_CONFIRMATION');previewControls();
 }
 function clearPreview(){const video=$('preview-video');if(video.getAttribute('src')){video.pause();video.removeAttribute('src');video.load();}video.hidden=true;$('preview-metadata').textContent='';}
@@ -105,6 +105,7 @@ function display(next){
  discoveryErrors.DISCOVERY_BROWSER_ISOLATION_FAILED='Вибраний браузер не пройшов перевірку мережевого захисту. Пошук зупинено до відкриття сайту; захист не вимикався.';
  discoveryErrors.DISCOVERY_BROWSER_START_FAILED='Не вдалося запустити браузер пошуку з обов’язковою пісочницею. Захист не вимикався. Установи або онови браузер, у якому відкрито цей інтерфейс (Google Chrome або Microsoft Edge); якщо він уже є, перевір його політики й технічний звіт.';
  discoveryErrors.DISCOVERY_STARTUP_TIMEOUT='Підготовка браузера пошуку не завершилась за 4 хвилини. Спробуй знову; якщо помилка повторюється, збережи технічний звіт.';
+ discoveryErrors.MEDIA_RESOLUTION_MISMATCH='Фактична роздільність відео не відповідає вибраній у плейлисті. Файл не збережено. Почни новий пошук і вибери інше джерело або якість.';
  $('error').textContent=state.error?(discoveryErrors[state.error]||`Код: ${state.error}. Якщо проблема повторюється, збережи технічний звіт.`):'';
  $('cleanup').hidden=!state.cleanupUncertain;$('cancel').hidden=!state.workerAlive;$('result').hidden=!state.fileReady;
  if(state.fileReady){$('output-path').textContent=state.outputPath;$('file').href='/api/file/'+encodeURIComponent(state.discoveryId);}
@@ -118,7 +119,7 @@ function display(next){
  const video=$('preview-video');
  if(state.previewReady){const src='/api/preview/'+encodeURIComponent(state.discoveryId)+'?v='+state.previewRevision;if(video.getAttribute('src')!==src){clearPreview();video.src=src;}video.hidden=false;}else clearPreview();
  const previewLimits={PREVIEW_REQUEST_LIMIT:'Перевищено бюджет запитів передперегляду.',PREVIEW_BYTE_LIMIT:'Перевищено бюджет даних передперегляду (128 MiB).',PREVIEW_TIME_LIMIT:'Вичерпано час передперегляду (2 хвилини).'};
- $('preview-status').textContent=state.phase==='PREVIEWING'?'Отримуємо початкові сегменти та готуємо фрагмент…':state.previewError?`${previewLimits[state.previewError]||`Передперегляд недоступний (${state.previewError}).`} Спробуй коротший фрагмент. Повне завантаження можна підтвердити окремо.`:state.previewReady?'Фрагмент готовий. Натисни ▶ для перегляду.':'';
+ $('preview-status').textContent=state.phase==='PREVIEWING'?'Отримуємо початкові сегменти та готуємо фрагмент…':state.previewError==='MEDIA_RESOLUTION_MISMATCH'?'Фактична роздільність фрагмента не відповідає вибраній у плейлисті. Скасуй пошук і вибери інше джерело або якість.':state.previewError?`${previewLimits[state.previewError]||`Передперегляд недоступний (${state.previewError}).`} Спробуй коротший фрагмент. Повне завантаження можна підтвердити окремо.`:state.previewReady?'Фрагмент готовий. Натисни ▶ для перегляду.':'';
  const r=state.review||{};$('review-panel').hidden=!['AWAITING_CONFIRMATION','PREVIEWING'].includes(state.phase);
  if(r.token&&r.token!==previewToken){previewToken=r.token;$('preview-seconds').value=String(Math.min(5000,r.previewMaximumMillis||5000)/1000);$('preview-settings').open=false;}
  $('preview-settings').hidden=!r.previewAvailable;

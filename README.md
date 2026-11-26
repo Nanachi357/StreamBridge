@@ -28,6 +28,11 @@ paywalls, CAPTCHA and access-control bypasses are outside the project scope.
 - Optional preview defaults to five seconds. Expand its settings to change the
   duration, up to the shortest selected track. Stream copy preserves encoded
   quality; packet boundaries can slightly extend the actual duration.
+- Declared dimensions are checked against the video stream reported by FFprobe
+  before publishing a preview or completed file. A mismatch fails explicitly;
+  it is never repaired by upscaling. A preview resolution mismatch blocks full confirmation.
+  Undeclared resolution remains unknown; this check does not establish the visual
+  detail of the source or detect every mid-stream resolution change.
 - Progress, cancellation, remembered output directory and collision-safe names
   (`video.mp4`, `video (1).mp4`, ...) are available. Windows Downloads is the default.
 

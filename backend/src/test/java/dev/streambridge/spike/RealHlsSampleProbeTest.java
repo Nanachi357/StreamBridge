@@ -16,6 +16,8 @@ class RealHlsSampleProbeTest {
     @Test void fullTransferRejectsMissingSelectedSeparateAudio() throws Exception { encodedTransfer("missing-audio"); }
     @Test void fullTransferKeepsSelectedInBandAudio() throws Exception { encodedTransfer("in-band"); }
     @Test void fullTransferRejectsMissingSelectedInBandAudio() throws Exception { encodedTransfer("missing-in-band"); }
+    @Test void previewAndFullTransferRejectMislabelledResolution() throws Exception { encodedTransfer("wrong-resolution"); }
+    @Test void fullTransferWithoutPreviewRejectsMislabelledResolution() throws Exception { encodedTransfer("wrong-resolution-no-preview"); }
 
     private void encodedTransfer(String mode) throws Exception {
         String configured = System.getenv("STREAMBRIDGE_FFMPEG_DIR");
@@ -38,7 +40,8 @@ class RealHlsSampleProbeTest {
         var catalog = new HlsCandidateCatalog(uri -> "fixture");
         catalog.observe("https://example.org/master", "https://example.org/page", "#EXTM3U\n"
                 + (separate || inBand ? "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"sound\",NAME=\"Selected\"" + (separate ? ",URI=\"/audio\"" : "") + "\n" : "")
-                + "#EXT-X-STREAM-INF:BANDWIDTH=100000,RESOLUTION=96x64" + (separate || inBand ? ",AUDIO=\"sound\"" : "") + "\n/media\n");
+                + "#EXT-X-STREAM-INF:BANDWIDTH=100000,RESOLUTION=" + (mode.startsWith("wrong-resolution") ? "1280x720" : "96x64")
+                + (separate || inBand ? ",AUDIO=\"sound\"" : "") + "\n/media\n");
         var plan = HlsTransferPlan.build(catalog, catalog.choose(catalog.versionedSnapshot().revision(), "C1", "V1", separate || inBand ? "A1" : "unknown"));
         var output = new java.util.concurrent.atomic.AtomicReference<Path>();
         var previewed = new java.util.concurrent.atomic.AtomicBoolean();
@@ -46,6 +49,10 @@ class RealHlsSampleProbeTest {
         var feedback = new TransferFeedback() {
             public boolean alwaysReview() { return true; }
             public boolean approve(DownloadReview review, java.util.function.Predicate<DownloadReview> fallback, Preview preview) {
+                if (mode.equals("wrong-resolution")) {
+                    assertThrows(MediaResolution.Mismatch.class, () -> preview.create(1000));
+                    previewed.set(true);
+                }
                 if (mode.equals("silent")) try {
                     assertTrue(Files.size(preview.create(1000)) > 0); previewed.set(true);
                 } catch (Exception e) { throw new AssertionError("Silent preview failed", e); }
@@ -54,8 +61,10 @@ class RealHlsSampleProbeTest {
             public void file(Path path) { output.set(path); }
             public void failure(String code) { failure.set(code); }
         };
+        var fetchedPaths = new ArrayList<String>();
         var result = RealHlsSampleProbe.run(plan, directory, line -> {}, true, 100000, review -> true,
                 (uri, limits, budget) -> {
+                    fetchedPaths.add(uri.getPath());
                     budget.claim();
                     byte[] bytes = switch (uri.getPath()) {
                         case "/media", "/audio" -> ("#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:2\n#EXTINF:2,\n"
@@ -66,7 +75,14 @@ class RealHlsSampleProbeTest {
                     };
                     return new BoundedResourceFetcher.Resource(uri, bytes);
                 }, tools, feedback);
-        if (mode.startsWith("missing-")) {
+        if (mode.startsWith("wrong-resolution")) {
+            assertEquals(mode.equals("wrong-resolution"), previewed.get());
+            // A rejected preview must not be fetched again as a full download after confirmation.
+            assertEquals(List.of("/media", "/video.ts"), fetchedPaths);
+            assertEquals(RealHlsSampleProbe.Result.FAILED, result);
+            assertEquals("MEDIA_RESOLUTION_MISMATCH", failure.get());
+            assertNull(output.get());
+        } else if (mode.startsWith("missing-")) {
             assertEquals(RealHlsSampleProbe.Result.FAILED, result);
             assertEquals("REMUX_IOException", failure.get()); assertNull(output.get());
         } else {
